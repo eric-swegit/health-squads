@@ -9,13 +9,114 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          points: number
+          requires_photo: boolean
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          points: number
+          requires_photo?: boolean
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          points?: number
+          requires_photo?: boolean
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      claimed_activities: {
+        Row: {
+          activity_id: string
+          created_at: string
+          date: string
+          id: string
+          photo_url: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          photo_url?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          photo_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claimed_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          daily_points: number
+          email: string
+          id: string
+          name: string
+          total_points: number
+        }
+        Insert: {
+          created_at?: string
+          daily_points?: number
+          email: string
+          id: string
+          name: string
+          total_points?: number
+        }
+        Update: {
+          created_at?: string
+          daily_points?: number
+          email?: string
+          id?: string
+          name?: string
+          total_points?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          daily_points: number
+          email: string
+          id: string
+          name: string
+          total_points: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

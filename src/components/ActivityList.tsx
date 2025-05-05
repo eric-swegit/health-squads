@@ -1,26 +1,109 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import { Activity } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/components/ui/sonner";
 
 const ActivityList = () => {
   const [activeSection, setActiveSection] = useState<'common' | 'personal'>('common');
+  const [commonActivities, setCommonActivities] = useState<Activity[]>([]);
+  const [personalActivities, setPersonalActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [claimedToday, setClaimedToday] = useState<string[]>([]);
+  const [user, setUser] = useState<any>(null);
 
-  const commonActivities: Activity[] = [
-    { id: '1', name: 'Gym 30 min', points: 5, requiresPhoto: true, type: 'common' },
-    { id: '2', name: '20K steg', points: 8, requiresPhoto: true, type: 'common' },
-    { id: '3', name: 'Dricka 1.5L vatten', points: 2, requiresPhoto: false, type: 'common' },
-    { id: '4', name: 'Mindfulness 20 min', points: 1, requiresPhoto: false, type: 'common' },
-  ];
+  useEffect(() => {
+    // Get the current user
+    const getCurrentUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        return session.user;
+      }
+      return null;
+    };
 
-  const personalActivities: Activity[] = [
-    { id: 'p1', name: 'Vakna innan 05:30', points: 1, requiresPhoto: true, type: 'personal', userId: '1' },
-    { id: 'p2', name: '11 st push-ups', points: 1, requiresPhoto: true, type: 'personal', userId: '1' },
-  ];
+    // Fetch activities
+    const fetchActivities = async () => {
+      setLoading(true);
+      const currentUser = await getCurrentUser();
+      
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch common activities
+        const { data: commonData, error: commonError } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('type', 'common');
+
+        if (commonError) throw commonError;
+        
+        // Fetch personal activities for the user
+        const { data: personalData, error: personalError } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('type', 'personal')
+          .eq('user_id', currentUser.id);
+
+        if (personalError) throw personalError;
+
+        // Fetch claimed activities for today
+        const today = new Date().toISOString().split('T')[0];
+        const { data: claimedData, error: claimedError } = await supabase
+          .from('claimed_activities')
+          .select('activity_id')
+          .eq('user_id', currentUser.id)
+          .eq('date', today);
+
+        if (claimedError) throw claimedError;
+
+        // Map to our Activity type
+        setCommonActivities(commonData.map((activity: any) => ({
+          id: activity.id,
+          name: activity.name,
+          points: activity.points,
+          requiresPhoto: activity.requires_photo,
+          type: activity.type
+        })));
+
+        setPersonalActivities(personalData.map((activity: any) => ({
+          id: activity.id,
+          name: activity.name,
+          points: activity.points,
+          requiresPhoto: activity.requires_photo,
+          type: activity.type,
+          userId: activity.user_id
+        })));
+
+        setClaimedToday(claimedData.map((item: any) => item.activity_id));
+      } catch (error: any) {
+        toast.error(`Error fetching activities: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, []);
 
   const handleClaim = async (activity: Activity) => {
+    if (!user) {
+      toast.error("Du måste vara inloggad för att claima aktiviteter");
+      return;
+    }
+
+    if (claimedToday.includes(activity.id)) {
+      toast.error("Du har redan claimat denna aktivitet idag");
+      return;
+    }
+
     if (activity.requiresPhoto) {
       // Open file upload
       const input = document.createElement('input');
@@ -29,16 +112,62 @@ const ActivityList = () => {
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (file) {
-          // TODO: Handle file upload and activity claim
-          console.log('Uploading file for activity:', activity.name);
+          try {
+            // Upload file to Supabase Storage
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}/${activity.id}_${Date.now()}.${fileExt}`;
+            
+            const { data, error } = await supabase.storage
+              .from('activity-photos')
+              .upload(fileName, file);
+
+            if (error) throw error;
+
+            // Get public URL
+            const { data: urlData } = supabase.storage
+              .from('activity-photos')
+              .getPublicUrl(fileName);
+
+            // Save claimed activity with photo URL
+            await saveClaimedActivity(activity, urlData.publicUrl);
+          } catch (error: any) {
+            toast.error(`Uppladdning misslyckades: ${error.message}`);
+          }
         }
       };
       input.click();
     } else {
-      // TODO: Handle activity claim without photo
-      console.log('Claiming activity:', activity.name);
+      // Claim without photo
+      try {
+        await saveClaimedActivity(activity);
+      } catch (error: any) {
+        toast.error(`Kunde inte claima aktivitet: ${error.message}`);
+      }
     }
   };
+
+  const saveClaimedActivity = async (activity: Activity, photoUrl?: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { error } = await supabase
+      .from('claimed_activities')
+      .insert({
+        user_id: user.id,
+        activity_id: activity.id,
+        date: today,
+        photo_url: photoUrl || null
+      });
+
+    if (error) throw error;
+
+    // Update local state
+    setClaimedToday([...claimedToday, activity.id]);
+    toast.success(`Claimade ${activity.name} för ${activity.points} poäng!`);
+  };
+
+  if (loading) {
+    return <div className="p-4 text-center">Laddar aktiviteter...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -67,12 +196,21 @@ const ActivityList = () => {
                 <div className="font-medium">{activity.name}</div>
                 <div className="text-sm text-gray-500">{activity.points}p</div>
               </div>
-              <Button onClick={() => handleClaim(activity)} variant="outline">
+              <Button 
+                onClick={() => handleClaim(activity)} 
+                variant="outline"
+                disabled={claimedToday.includes(activity.id)}
+              >
                 {activity.requiresPhoto && <Camera className="mr-2 h-4 w-4" />}
-                Claima
+                {claimedToday.includes(activity.id) ? "Claimad" : "Claima"}
               </Button>
             </div>
           ))}
+          {activeSection === 'personal' && personalActivities.length === 0 && (
+            <div className="text-center p-4 text-gray-500">
+              Du har inga personliga aktiviteter än. Kontakta en administratör för att lägga till personliga mål.
+            </div>
+          )}
         </div>
       </Card>
     </div>
