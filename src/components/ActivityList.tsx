@@ -1,11 +1,26 @@
 
 import { useState, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera } from "lucide-react";
+import { Camera, Info, 
+  Dumbbell, Steps, Book, Vegetarian, Fruit, 
+  Home, Water, Activity } from "lucide-react";
 import { Activity } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/sonner";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ActivityList = () => {
   const [activeSection, setActiveSection] = useState<'common' | 'personal'>('common');
@@ -14,6 +29,33 @@ const ActivityList = () => {
   const [loading, setLoading] = useState(true);
   const [claimedToday, setClaimedToday] = useState<string[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
+
+  const activityInfo: Record<string, string> = {
+    "Mindfulness 20 min": "Mindfulness kan exempelvis vara att läsa bok, lösa soduko, meditera eller annat liknande, denna aktivitet ska vara helt SKÄRMFRI.",
+    "Vegetarisk dag": "Ät inga kött- eller fiskprodukter under hela dagen.",
+    "Frukt/grönt till 3 måltider": "Se till att inkludera frukt eller grönsaker i minst tre måltider under dagen.",
+    "Inget koffein hela dagen": "Undvik kaffe, te, energidrycker och andra koffeinhaltiga drycker.",
+    "Hemmaträning 20 min": "Genomför ett träningspass hemma som varar i minst 20 minuter.",
+    "Gym 30 min": "Besök gymmet och träna i minst 30 minuter.",
+    "Dricka 1.5L vatten": "Drick minst 1,5 liter vatten under dagen.",
+    "20K steg": "Ta minst 20 000 steg under dagen.",
+    "10K steg": "Ta minst 10 000 steg under dagen.",
+    "5K steg": "Ta minst 5 000 steg under dagen."
+  };
+
+  const getActivityIcon = (activityName: string) => {
+    if (activityName.includes("Gym")) return Dumbbell;
+    if (activityName.includes("steg")) return Steps;
+    if (activityName.includes("Mindfulness") || activityName.includes("bok")) return Book;
+    if (activityName.includes("Vegetarisk")) return Vegetarian;
+    if (activityName.includes("Frukt")) return Fruit;
+    if (activityName.includes("Hemmaträning")) return Home;
+    if (activityName.includes("vatten")) return Water;
+    if (activityName.includes("koffein")) return Activity;
+    return Activity; // Default icon
+  };
 
   useEffect(() => {
     // Get the current user
@@ -189,30 +231,93 @@ const ActivityList = () => {
           </Button>
         </div>
 
-        <div className="space-y-2">
-          {(activeSection === 'common' ? commonActivities : personalActivities).map((activity) => (
-            <div key={activity.id} className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
-              <div>
-                <div className="font-medium">{activity.name}</div>
-                <div className="text-sm text-gray-500">{activity.points}p</div>
-              </div>
-              <Button 
-                onClick={() => handleClaim(activity)} 
-                variant="outline"
-                disabled={claimedToday.includes(activity.id)}
-              >
-                {activity.requiresPhoto && <Camera className="mr-2 h-4 w-4" />}
-                {claimedToday.includes(activity.id) ? "Claimad" : "Claima"}
-              </Button>
-            </div>
-          ))}
+        <CardContent className="p-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {(activeSection === 'common' ? commonActivities : personalActivities).map((activity) => {
+              const ActivityIcon = getActivityIcon(activity.name);
+              const isClaimed = claimedToday.includes(activity.id);
+              
+              return (
+                <Card 
+                  key={activity.id} 
+                  className={`overflow-hidden transition-all ${isClaimed ? 'bg-gray-100 border-green-300' : 'hover:shadow-md'}`}
+                >
+                  <CardContent className="p-4 flex flex-col justify-between h-full">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center mb-3">
+                        <ActivityIcon className="h-5 w-5 mr-2 text-purple-600" />
+                        <h3 className="font-medium text-sm">{activity.name}</h3>
+                      </div>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 rounded-full bg-purple-50"
+                              onClick={() => {
+                                setSelectedActivity(activity);
+                                setInfoOpen(true);
+                              }}
+                            >
+                              <Info className="h-3 w-3 text-purple-700" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Visa info</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-sm font-bold text-purple-700">{activity.points}p</span>
+                      <Button 
+                        onClick={() => handleClaim(activity)} 
+                        variant={isClaimed ? "outline" : "default"}
+                        size="sm"
+                        className={isClaimed ? "border-green-500 text-green-700" : ""}
+                        disabled={isClaimed}
+                      >
+                        {activity.requiresPhoto && <Camera className="mr-1 h-3 w-3" />}
+                        {isClaimed ? "Claimad" : "Claima"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          
           {activeSection === 'personal' && personalActivities.length === 0 && (
-            <div className="text-center p-4 text-gray-500">
+            <div className="text-center p-8 text-gray-500">
               Du har inga personliga aktiviteter än. Kontakta en administratör för att lägga till personliga mål.
             </div>
           )}
-        </div>
+        </CardContent>
       </Card>
+
+      <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedActivity?.name}</DialogTitle>
+            <DialogDescription>
+              {selectedActivity && activityInfo[selectedActivity.name] ? 
+                activityInfo[selectedActivity.name] : 
+                "Ingen beskrivning tillgänglig för denna aktivitet."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-between items-center pt-2">
+            <div className="text-sm text-muted-foreground">
+              Poäng: <span className="font-bold text-purple-700">{selectedActivity?.points}p</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {selectedActivity?.requiresPhoto ? "Kräver foto" : "Inget foto krävs"}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
