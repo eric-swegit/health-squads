@@ -9,6 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import LeaderboardPage from "./pages/LeaderboardPage";
+import ActivityPage from "./pages/ActivityPage";
+import ProfilePage from "./pages/ProfilePage";
+import NavBar from "./components/NavBar";
 
 const queryClient = new QueryClient();
 
@@ -40,23 +44,52 @@ const App = () => {
     return user ? children : <Navigate to="/auth" />;
   };
 
+  const showNavBar = user && !loading;
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
+          <div className={showNavBar ? "pb-16" : ""}>
+            <Routes>
+              <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
+              <Route
+                path="/"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <PrivateRoute>
+                    <LeaderboardPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/activities"
+                element={
+                  <PrivateRoute>
+                    <ActivityPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <ProfilePage />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+            {showNavBar && <NavBar />}
+          </div>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

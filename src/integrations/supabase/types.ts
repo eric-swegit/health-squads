@@ -74,6 +74,81 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          claimed_activity_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_activity_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          claimed_activity_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_claimed_activity_id_fkey"
+            columns: ["claimed_activity_id"]
+            isOneToOne: false
+            referencedRelation: "claimed_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_claimed_activity_id_fkey"
+            columns: ["claimed_activity_id"]
+            isOneToOne: false
+            referencedRelation: "feed_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      likes: {
+        Row: {
+          claimed_activity_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_activity_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          claimed_activity_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_claimed_activity_id_fkey"
+            columns: ["claimed_activity_id"]
+            isOneToOne: false
+            referencedRelation: "claimed_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_claimed_activity_id_fkey"
+            columns: ["claimed_activity_id"]
+            isOneToOne: false
+            referencedRelation: "feed_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -81,6 +156,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          profile_image_url: string | null
           total_points: number
         }
         Insert: {
@@ -89,6 +165,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          profile_image_url?: string | null
           total_points?: number
         }
         Update: {
@@ -97,13 +174,36 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          profile_image_url?: string | null
           total_points?: number
         }
         Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      feed_activities: {
+        Row: {
+          activity_id: string | null
+          activity_name: string | null
+          created_at: string | null
+          date: string | null
+          id: string | null
+          photo_url: string | null
+          points: number | null
+          profile_image_url: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claimed_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_profiles: {
@@ -114,6 +214,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          profile_image_url: string | null
           total_points: number
         }[]
       }

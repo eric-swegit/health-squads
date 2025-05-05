@@ -1,19 +1,17 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { LogOut, Calendar, Clock } from "lucide-react";
-import ActivityList from '@/components/ActivityList';
+import { Calendar, Clock } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/sonner";
-import LeaderboardSummary from '@/components/LeaderboardSummary';
+import FeedList from '@/components/FeedList';
 
 const Dashboard = () => {
   const [userName, setUserName] = useState('');
   const [daysLeft, setDaysLeft] = useState(0);
   const [timeUntilNextDay, setTimeUntilNextDay] = useState('');
 
-  // Calculate days left in challenge (assuming it's a 30-day challenge starting from May 1st, 2025)
+  // Calculate days left in challenge
   useEffect(() => {
     const calculateDaysLeft = () => {
       const challengeEndDate = new Date('2025-05-31T23:59:59');
@@ -74,25 +72,11 @@ const Dashboard = () => {
     getProfile();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      toast.success("Du är nu utloggad");
-    } catch (error: any) {
-      toast.error(`Utloggning misslyckades: ${error.message}`);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">Hej, {userName || 'vän'}!</h1>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logga ut
-          </Button>
         </div>
         
         {/* Challenge status */}
@@ -114,11 +98,8 @@ const Dashboard = () => {
           </Card>
         </div>
         
-        {/* Leaderboard Summary */}
-        <LeaderboardSummary />
-        
-        {/* Activities */}
-        <ActivityList />
+        {/* Feed */}
+        <FeedList />
       </div>
     </div>
   );

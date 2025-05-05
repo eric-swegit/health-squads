@@ -9,3 +9,9 @@ enabled = true
 
 [realtime.tables.claimed_activities]
 enabled = true
+
+[realtime.tables.likes]
+enabled = true
+
+[realtime.tables.comments]
+enabled = true
