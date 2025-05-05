@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -390,7 +389,7 @@ const ActivityList = () => {
                     return (
                       <Card 
                         key={activity.id} 
-                        className={`overflow-hidden transition-all aspect-square ${
+                        className={`overflow-hidden transition-all aspect-square h-[125px] ${
                           isClaimed ? 'bg-gray-100 border-green-300' : 'hover:shadow-md cursor-pointer'
                         }`}
                         onClick={() => !isClaimed && handleClaim(activity)}
@@ -420,23 +419,23 @@ const ActivityList = () => {
                             </TooltipProvider>
                           </div>
                           
-                          {/* Icon in center */}
+                          {/* Icon, title and duration centered in the middle */}
                           <div className="flex flex-col items-center justify-center mt-2 flex-1">
-                            <ActivityIcon className="h-8 w-8 text-purple-600 mb-2" />
-                            <h3 className="font-medium text-sm text-center">{title}</h3>
+                            <ActivityIcon className="h-6 w-6 text-purple-600 mb-1" />
+                            <h3 className="font-medium text-xs text-center">{title}</h3>
                             <p className="text-xs text-gray-500 mt-1 text-center">{duration}</p>
                           </div>
                           
                           {/* Status banner if claimed */}
                           {isClaimed && (
                             <div className="absolute inset-0 bg-green-100/70 flex flex-col items-center justify-center gap-2">
-                              <div className="bg-white/80 py-1 px-3 rounded-full shadow-sm">
+                              <div className="bg-white/80 py-1 px-2 rounded-full shadow-sm">
                                 <span className="text-green-600 text-xs font-semibold">Genomförd idag</span>
                               </div>
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="text-xs flex items-center gap-1"
+                                className="text-xs flex items-center gap-1 py-1 px-2 h-7"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleUndoClaim(activity.id);
@@ -449,7 +448,7 @@ const ActivityList = () => {
                           
                           {/* Points in bottom right */}
                           <div className="absolute bottom-1 right-1">
-                            <span className="text-sm font-bold text-purple-700">{activity.points}p</span>
+                            <span className="text-xs font-bold text-purple-700">{activity.points}p</span>
                           </div>
                           
                           {/* Camera indicator */}
