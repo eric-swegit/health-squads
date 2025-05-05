@@ -1,10 +1,15 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, Info, 
-  Dumbbell, Steps, Book, Vegetarian, Fruit, 
-  Home, Water, Activity } from "lucide-react";
+import { 
+  Camera, 
+  Info, 
+  Dumbbell, 
+  Book, 
+  Leaf, // Replace 'Vegetarian'
+  Home, 
+  Activity as ActivityIcon // Rename Activity icon to ActivityIcon
+} from "lucide-react";
 import { Activity } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/sonner";
@@ -47,14 +52,14 @@ const ActivityList = () => {
 
   const getActivityIcon = (activityName: string) => {
     if (activityName.includes("Gym")) return Dumbbell;
-    if (activityName.includes("steg")) return Steps;
+    if (activityName.includes("steg")) return ActivityIcon; // Changed from Steps to ActivityIcon
     if (activityName.includes("Mindfulness") || activityName.includes("bok")) return Book;
-    if (activityName.includes("Vegetarisk")) return Vegetarian;
-    if (activityName.includes("Frukt")) return Fruit;
+    if (activityName.includes("Vegetarisk")) return Leaf; // Changed from Vegetarian to Leaf
+    if (activityName.includes("Frukt")) return Leaf; // Changed from Fruit to Leaf
     if (activityName.includes("Hemmaträning")) return Home;
-    if (activityName.includes("vatten")) return Water;
-    if (activityName.includes("koffein")) return Activity;
-    return Activity; // Default icon
+    if (activityName.includes("vatten")) return ActivityIcon; // Changed from Water to ActivityIcon
+    if (activityName.includes("koffein")) return ActivityIcon;
+    return ActivityIcon; // Default icon
   };
 
   useEffect(() => {
