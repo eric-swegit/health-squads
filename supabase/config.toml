@@ -6,3 +6,6 @@ enabled = true
 
 [realtime.tables.profiles]
 enabled = true
+
+[realtime.tables.claimed_activities]
+enabled = true

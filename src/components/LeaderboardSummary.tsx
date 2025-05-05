@@ -30,6 +30,7 @@ export const useLeaderboardData = () => {
         setUsers(mappedUsers);
       }
     } catch (error: any) {
+      console.error('Failed to fetch users:', error.message);
       toast.error(`Failed to fetch users: ${error.message}`);
     } finally {
       setLoading(false);
@@ -44,7 +45,20 @@ export const useLeaderboardData = () => {
       .channel('public:profiles')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'profiles' }, 
-        () => {
+        (payload) => {
+          console.log('Profile changed:', payload);
+          fetchUsers();
+        }
+      )
+      .subscribe();
+      
+    // Also set up a subscription to claimed_activities changes
+    const claimedActivitiesChannel = supabase
+      .channel('claimed_activities_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'claimed_activities' }, 
+        (payload) => {
+          console.log('Activity claimed:', payload);
           fetchUsers();
         }
       )
@@ -52,6 +66,7 @@ export const useLeaderboardData = () => {
       
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(claimedActivitiesChannel);
     };
   }, [lastRefresh]);
 
@@ -95,6 +110,9 @@ const LeaderboardSummary = () => {
                   <div className="font-bold text-sm">{user.dailyPoints}p</div>
                 </div>
               ))}
+              {topDailyUsers.length === 0 && (
+                <div className="text-center p-2 text-gray-500 text-sm">Inga poäng registrerade idag.</div>
+              )}
             </div>
           </div>
 
@@ -118,6 +136,9 @@ const LeaderboardSummary = () => {
                   </div>
                 </div>
               ))}
+              {topTotalUsers.length === 0 && (
+                <div className="text-center p-2 text-gray-500 text-sm">Inga användare med poäng ännu.</div>
+              )}
             </div>
           </div>
         </div>
