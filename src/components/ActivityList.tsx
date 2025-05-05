@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +7,11 @@ import {
   Info, 
   Dumbbell, 
   Book, 
-  Leaf, // Replace 'Vegetarian'
-  Home, 
-  Activity as ActivityIcon // Rename Activity icon to ActivityIcon
+  Leaf,
+  Home,
+  Activity as ActivityIcon,
+  Coffee,
+  GlassWater
 } from "lucide-react";
 import { Activity } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,10 +28,22 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ActivityList = () => {
   const [activeSection, setActiveSection] = useState<'common' | 'personal'>('common');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'physical' | 'diet' | 'mind'>('all');
   const [commonActivities, setCommonActivities] = useState<Activity[]>([]);
   const [personalActivities, setPersonalActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +51,7 @@ const ActivityList = () => {
   const [user, setUser] = useState<any>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const activityInfo: Record<string, string> = {
     "Mindfulness 20 min": "Mindfulness kan exempelvis vara att läsa bok, lösa soduko, meditera eller annat liknande, denna aktivitet ska vara helt SKÄRMFRI.",
@@ -50,16 +66,51 @@ const ActivityList = () => {
     "5K steg": "Ta minst 5 000 steg under dagen."
   };
 
+  const getActivityCategory = (activityName: string): 'physical' | 'diet' | 'mind' => {
+    if (activityName.includes("Gym") || activityName.includes("steg") || activityName.includes("Hemmaträning")) {
+      return 'physical';
+    }
+    if (activityName.includes("Vegetarisk") || activityName.includes("Frukt") || 
+        activityName.includes("vatten") || activityName.includes("koffein")) {
+      return 'diet';
+    }
+    return 'mind'; // Default to mind
+  };
+
   const getActivityIcon = (activityName: string) => {
     if (activityName.includes("Gym")) return Dumbbell;
-    if (activityName.includes("steg")) return ActivityIcon; // Changed from Steps to ActivityIcon
+    if (activityName.includes("steg")) return ActivityIcon;
     if (activityName.includes("Mindfulness") || activityName.includes("bok")) return Book;
-    if (activityName.includes("Vegetarisk")) return Leaf; // Changed from Vegetarian to Leaf
-    if (activityName.includes("Frukt")) return Leaf; // Changed from Fruit to Leaf
+    if (activityName.includes("Vegetarisk")) return Leaf;
+    if (activityName.includes("Frukt")) return Leaf;
     if (activityName.includes("Hemmaträning")) return Home;
-    if (activityName.includes("vatten")) return ActivityIcon; // Changed from Water to ActivityIcon
-    if (activityName.includes("koffein")) return ActivityIcon;
+    if (activityName.includes("vatten")) return GlassWater;
+    if (activityName.includes("koffein")) return Coffee;
     return ActivityIcon; // Default icon
+  };
+
+  const getActivityDuration = (activityName: string): string => {
+    if (activityName.includes("20 min")) return "20 min";
+    if (activityName.includes("30 min")) return "30 min";
+    if (activityName.includes("1.5L")) return "1.5 Liter";
+    if (activityName.includes("20K")) return "20 000 steg";
+    if (activityName.includes("10K")) return "10 000 steg";
+    if (activityName.includes("5K")) return "5 000 steg";
+    if (activityName.includes("3 måltider")) return "3 måltider";
+    if (activityName.includes("dag")) return "Hela dagen";
+    return "";
+  };
+
+  const getActivityTitle = (activityName: string): string => {
+    if (activityName.includes("Mindfulness")) return "Mindfulness";
+    if (activityName.includes("Vegetarisk")) return "Vegetarisk kost";
+    if (activityName.includes("Frukt/grönt")) return "Frukt/grönt";
+    if (activityName.includes("koffein")) return "Utan koffein";
+    if (activityName.includes("Hemmaträning")) return "Hemmaträning";
+    if (activityName.includes("Gym")) return "Gym";
+    if (activityName.includes("Dricka")) return "Dricka vatten";
+    if (activityName.includes("steg")) return "Gå/springa";
+    return activityName;
   };
 
   useEffect(() => {
@@ -151,6 +202,8 @@ const ActivityList = () => {
       return;
     }
 
+    setSelectedActivity(activity);
+
     if (activity.requiresPhoto) {
       // Open file upload
       const input = document.createElement('input');
@@ -184,12 +237,8 @@ const ActivityList = () => {
       };
       input.click();
     } else {
-      // Claim without photo
-      try {
-        await saveClaimedActivity(activity);
-      } catch (error: any) {
-        toast.error(`Kunde inte claima aktivitet: ${error.message}`);
-      }
+      // Open confirmation dialog
+      setConfirmOpen(true);
     }
   };
 
@@ -209,12 +258,19 @@ const ActivityList = () => {
 
     // Update local state
     setClaimedToday([...claimedToday, activity.id]);
-    toast.success(`Claimade ${activity.name} för ${activity.points} poäng!`);
+    setConfirmOpen(false);
+    toast.success(`Bra jobbat! Du får ${activity.points} poäng för ${activity.name}!`);
   };
 
   if (loading) {
     return <div className="p-4 text-center">Laddar aktiviteter...</div>;
   }
+
+  const getFilteredActivities = () => {
+    const activities = activeSection === 'common' ? commonActivities : personalActivities;
+    if (activeCategory === 'all') return activities;
+    return activities.filter(activity => getActivityCategory(activity.name) === activeCategory);
+  };
 
   return (
     <div className="space-y-4">
@@ -236,35 +292,72 @@ const ActivityList = () => {
           </Button>
         </div>
 
+        {/* Category filters */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+          <Button 
+            variant={activeCategory === 'all' ? "default" : "outline"}
+            onClick={() => setActiveCategory('all')}
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            Alla aktiviteter
+          </Button>
+          <Button 
+            variant={activeCategory === 'physical' ? "default" : "outline"}
+            onClick={() => setActiveCategory('physical')}
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            <Dumbbell className="h-4 w-4 mr-1" /> Fysiska aktiviteter
+          </Button>
+          <Button 
+            variant={activeCategory === 'diet' ? "default" : "outline"}
+            onClick={() => setActiveCategory('diet')}
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            <Leaf className="h-4 w-4 mr-1" /> Kost och dryck
+          </Button>
+          <Button 
+            variant={activeCategory === 'mind' ? "default" : "outline"}
+            onClick={() => setActiveCategory('mind')}
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            <Book className="h-4 w-4 mr-1" /> Sinnet
+          </Button>
+        </div>
+
         <CardContent className="p-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {(activeSection === 'common' ? commonActivities : personalActivities).map((activity) => {
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
+            {getFilteredActivities().map((activity) => {
               const ActivityIcon = getActivityIcon(activity.name);
               const isClaimed = claimedToday.includes(activity.id);
+              const title = getActivityTitle(activity.name);
+              const duration = getActivityDuration(activity.name);
               
               return (
                 <Card 
                   key={activity.id} 
-                  className={`overflow-hidden transition-all ${isClaimed ? 'bg-gray-100 border-green-300' : 'hover:shadow-md'}`}
+                  className={`overflow-hidden transition-all aspect-square ${
+                    isClaimed ? 'bg-gray-100 border-green-300' : 'hover:shadow-md cursor-pointer'
+                  }`}
+                  onClick={() => !isClaimed && handleClaim(activity)}
                 >
-                  <CardContent className="p-4 flex flex-col justify-between h-full">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center mb-3">
-                        <ActivityIcon className="h-5 w-5 mr-2 text-purple-600" />
-                        <h3 className="font-medium text-sm">{activity.name}</h3>
-                      </div>
-                      
+                  <CardContent className="p-4 flex flex-col justify-between h-full relative">
+                    {/* Info button in top right */}
+                    <div className="absolute top-0 right-0 p-1">
                       <TooltipProvider>
                         <Tooltip>
-                          <TooltipTrigger asChild>
+                          <TooltipTrigger asChild onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedActivity(activity);
+                            setInfoOpen(true);
+                          }}>
                             <Button
                               size="icon"
                               variant="ghost"
                               className="h-6 w-6 rounded-full bg-purple-50"
-                              onClick={() => {
-                                setSelectedActivity(activity);
-                                setInfoOpen(true);
-                              }}
                             >
                               <Info className="h-3 w-3 text-purple-700" />
                             </Button>
@@ -276,19 +369,37 @@ const ActivityList = () => {
                       </TooltipProvider>
                     </div>
                     
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm font-bold text-purple-700">{activity.points}p</span>
-                      <Button 
-                        onClick={() => handleClaim(activity)} 
-                        variant={isClaimed ? "outline" : "default"}
-                        size="sm"
-                        className={isClaimed ? "border-green-500 text-green-700" : ""}
-                        disabled={isClaimed}
-                      >
-                        {activity.requiresPhoto && <Camera className="mr-1 h-3 w-3" />}
-                        {isClaimed ? "Claimad" : "Claima"}
-                      </Button>
+                    {/* Icon in center top */}
+                    <div className="flex justify-center mb-2 mt-4">
+                      <ActivityIcon className="h-10 w-10 text-purple-600" />
                     </div>
+                    
+                    {/* Activity name in center */}
+                    <div className="text-center">
+                      <h3 className="font-medium text-sm">{title}</h3>
+                      <p className="text-xs text-gray-500 mt-1">{duration}</p>
+                    </div>
+                    
+                    {/* Status banner if claimed */}
+                    {isClaimed && (
+                      <div className="absolute inset-0 bg-green-100/70 flex items-center justify-center">
+                        <div className="bg-white/80 py-1 px-3 rounded-full shadow-sm">
+                          <span className="text-green-600 text-xs font-semibold">Genomförd idag</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Points in bottom right */}
+                    <div className="absolute bottom-2 right-2">
+                      <span className="text-sm font-bold text-purple-700">{activity.points}p</span>
+                    </div>
+                    
+                    {/* Camera indicator */}
+                    {activity.requiresPhoto && (
+                      <div className="absolute bottom-2 left-2">
+                        <Camera className="h-4 w-4 text-gray-400" />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -300,9 +411,16 @@ const ActivityList = () => {
               Du har inga personliga aktiviteter än. Kontakta en administratör för att lägga till personliga mål.
             </div>
           )}
+
+          {getFilteredActivities().length === 0 && (
+            <div className="text-center p-8 text-gray-500">
+              Inga aktiviteter hittades i denna kategori.
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Info Dialog */}
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
         <DialogContent>
           <DialogHeader>
@@ -323,6 +441,24 @@ const ActivityList = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bekräfta genomförd aktivitet</AlertDialogTitle>
+            <AlertDialogDescription>
+              Har du genomfört "{selectedActivity?.name}"? Detta kommer att ge dig {selectedActivity?.points} poäng.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Avbryt</AlertDialogCancel>
+            <AlertDialogAction onClick={() => selectedActivity && saveClaimedActivity(selectedActivity)}>
+              Ja, jag har genomfört aktiviteten
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

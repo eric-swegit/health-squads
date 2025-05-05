@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -13,4 +14,7 @@ export interface Activity {
   requiresPhoto: boolean;
   type: 'common' | 'personal';
   userId?: string;
+  category?: 'physical' | 'diet' | 'mind';
+  duration?: string;
+  amount?: string;
 }
