@@ -6,37 +6,64 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
 import { toast } from "@/components/ui/sonner";
 
-const LeaderboardSummary = () => {
+// Create a custom hook for leaderboard data that can be refreshed
+export const useLeaderboardData = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.rpc('get_profiles');
+      
+      if (error) throw error;
+      
+      if (data) {
+        const mappedUsers = data.map((user: any) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          totalPoints: user.total_points,
+          dailyPoints: user.daily_points,
+        }));
+        setUsers(mappedUsers);
+      }
+    } catch (error: any) {
+      toast.error(`Failed to fetch users: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase.rpc('get_profiles');
-        
-        if (error) throw error;
-        
-        if (data) {
-          const mappedUsers = data.map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            totalPoints: user.total_points,
-            dailyPoints: user.daily_points,
-          }));
-          setUsers(mappedUsers);
-        }
-      } catch (error: any) {
-        toast.error(`Failed to fetch users: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, []);
+    
+    // Set up a realtime subscription to profiles changes
+    const channel = supabase
+      .channel('public:profiles')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'profiles' }, 
+        () => {
+          fetchUsers();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [lastRefresh]);
+
+  const refreshLeaderboard = () => {
+    setLastRefresh(Date.now());
+  };
+
+  return { users, loading, refreshLeaderboard };
+};
+
+const LeaderboardSummary = () => {
+  const { users, loading } = useLeaderboardData();
 
   if (loading) {
     return <div className="p-4 text-center mb-4">Laddar leaderboard...</div>;

@@ -11,7 +11,8 @@ import {
   Home,
   Activity as ActivityIcon,
   Coffee,
-  GlassWater
+  GlassWater,
+  RotateCcw
 } from "lucide-react";
 import { Activity } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,16 +43,16 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const ActivityList = () => {
-  const [activeSection, setActiveSection] = useState<'common' | 'personal'>('common');
-  const [activeCategory, setActiveCategory] = useState<'all' | 'physical' | 'diet' | 'mind'>('all');
   const [commonActivities, setCommonActivities] = useState<Activity[]>([]);
   const [personalActivities, setPersonalActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [claimedToday, setClaimedToday] = useState<string[]>([]);
+  const [claimedIds, setClaimedIds] = useState<{[key: string]: string}>({});
   const [user, setUser] = useState<any>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<'common' | 'personal'>('common');
 
   const activityInfo: Record<string, string> = {
     "Mindfulness 20 min": "Mindfulness kan exempelvis vara att läsa bok, lösa soduko, meditera eller annat liknande, denna aktivitet ska vara helt SKÄRMFRI.",
@@ -109,7 +110,7 @@ const ActivityList = () => {
     if (activityName.includes("Hemmaträning")) return "Hemmaträning";
     if (activityName.includes("Gym")) return "Gym";
     if (activityName.includes("Dricka")) return "Dricka vatten";
-    if (activityName.includes("steg")) return "Gå/springa";
+    if (activityName.includes("steg")) return "Steg";
     return activityName;
   };
 
@@ -156,31 +157,44 @@ const ActivityList = () => {
         const today = new Date().toISOString().split('T')[0];
         const { data: claimedData, error: claimedError } = await supabase
           .from('claimed_activities')
-          .select('activity_id')
+          .select('id, activity_id')
           .eq('user_id', currentUser.id)
           .eq('date', today);
 
         if (claimedError) throw claimedError;
 
         // Map to our Activity type
-        setCommonActivities(commonData.map((activity: any) => ({
-          id: activity.id,
-          name: activity.name,
-          points: activity.points,
-          requiresPhoto: activity.requires_photo,
-          type: activity.type
-        })));
-
-        setPersonalActivities(personalData.map((activity: any) => ({
+        const mappedCommonActivities = commonData.map((activity: any) => ({
           id: activity.id,
           name: activity.name,
           points: activity.points,
           requiresPhoto: activity.requires_photo,
           type: activity.type,
-          userId: activity.user_id
-        })));
+          category: getActivityCategory(activity.name),
+          duration: getActivityDuration(activity.name)
+        }));
 
+        const mappedPersonalActivities = personalData.map((activity: any) => ({
+          id: activity.id,
+          name: activity.name,
+          points: activity.points,
+          requiresPhoto: activity.requires_photo,
+          type: activity.type,
+          userId: activity.user_id,
+          category: getActivityCategory(activity.name),
+          duration: getActivityDuration(activity.name)
+        }));
+
+        // Create a map of claimed activity IDs to their claimed record IDs
+        const claimedIdsMap: {[key: string]: string} = {};
+        claimedData.forEach((item: any) => {
+          claimedIdsMap[item.activity_id] = item.id;
+        });
+
+        setCommonActivities(mappedCommonActivities);
+        setPersonalActivities(mappedPersonalActivities);
         setClaimedToday(claimedData.map((item: any) => item.activity_id));
+        setClaimedIds(claimedIdsMap);
       } catch (error: any) {
         toast.error(`Error fetching activities: ${error.message}`);
       } finally {
@@ -245,32 +259,101 @@ const ActivityList = () => {
   const saveClaimedActivity = async (activity: Activity, photoUrl?: string) => {
     const today = new Date().toISOString().split('T')[0];
     
-    const { error } = await supabase
-      .from('claimed_activities')
-      .insert({
-        user_id: user.id,
-        activity_id: activity.id,
-        date: today,
-        photo_url: photoUrl || null
-      });
+    try {
+      const { data, error } = await supabase
+        .from('claimed_activities')
+        .insert({
+          user_id: user.id,
+          activity_id: activity.id,
+          date: today,
+          photo_url: photoUrl || null
+        })
+        .select();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Update local state
-    setClaimedToday([...claimedToday, activity.id]);
-    setConfirmOpen(false);
-    toast.success(`Bra jobbat! Du får ${activity.points} poäng för ${activity.name}!`);
+      if (data && data.length > 0) {
+        // Update local state
+        setClaimedToday([...claimedToday, activity.id]);
+        
+        // Store the claimed_activities.id for this activity to enable undo
+        const newClaimedIds = {...claimedIds};
+        newClaimedIds[activity.id] = data[0].id;
+        setClaimedIds(newClaimedIds);
+        
+        setConfirmOpen(false);
+        toast.success(`Bra jobbat! Du får ${activity.points} poäng för ${activity.name}!`);
+      }
+    } catch (error: any) {
+      toast.error(`Kunde inte spara aktivitet: ${error.message}`);
+    }
+  };
+
+  const handleUndoClaim = async (activityId: string) => {
+    if (!user) return;
+    
+    const claimedId = claimedIds[activityId];
+    if (!claimedId) {
+      toast.error("Kunde inte hitta aktiviteten för att ångra");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('claimed_activities')
+        .delete()
+        .eq('id', claimedId);
+
+      if (error) throw error;
+
+      // Update local state
+      setClaimedToday(claimedToday.filter(id => id !== activityId));
+      
+      // Remove from claimedIds map
+      const newClaimedIds = {...claimedIds};
+      delete newClaimedIds[activityId];
+      setClaimedIds(newClaimedIds);
+      
+      toast.success("Aktiviteten har ångrats");
+    } catch (error: any) {
+      toast.error(`Kunde inte ångra aktivitet: ${error.message}`);
+    }
   };
 
   if (loading) {
     return <div className="p-4 text-center">Laddar aktiviteter...</div>;
   }
 
-  const getFilteredActivities = () => {
-    const activities = activeSection === 'common' ? commonActivities : personalActivities;
-    if (activeCategory === 'all') return activities;
-    return activities.filter(activity => getActivityCategory(activity.name) === activeCategory);
+  const getActivitiesBySection = () => {
+    return activeSection === 'common' ? commonActivities : personalActivities;
   };
+
+  const groupActivitiesByCategory = (activities: Activity[]) => {
+    const grouped: {[key: string]: Activity[]} = {
+      'physical': [],
+      'diet': [],
+      'mind': []
+    };
+
+    activities.forEach(activity => {
+      if (activity.category) {
+        grouped[activity.category].push(activity);
+      }
+    });
+
+    return grouped;
+  };
+
+  const getCategoryTitle = (category: string) => {
+    switch(category) {
+      case 'physical': return 'Fysiska aktiviteter';
+      case 'diet': return 'Kost och dryck';
+      case 'mind': return 'Sinnet';
+      default: return 'Övriga aktiviteter';
+    }
+  };
+
+  const groupedActivities = groupActivitiesByCategory(getActivitiesBySection());
 
   return (
     <div className="space-y-4">
@@ -292,119 +375,97 @@ const ActivityList = () => {
           </Button>
         </div>
 
-        {/* Category filters */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-          <Button 
-            variant={activeCategory === 'all' ? "default" : "outline"}
-            onClick={() => setActiveCategory('all')}
-            size="sm"
-            className="whitespace-nowrap"
-          >
-            Alla aktiviteter
-          </Button>
-          <Button 
-            variant={activeCategory === 'physical' ? "default" : "outline"}
-            onClick={() => setActiveCategory('physical')}
-            size="sm"
-            className="whitespace-nowrap"
-          >
-            <Dumbbell className="h-4 w-4 mr-1" /> Fysiska aktiviteter
-          </Button>
-          <Button 
-            variant={activeCategory === 'diet' ? "default" : "outline"}
-            onClick={() => setActiveCategory('diet')}
-            size="sm"
-            className="whitespace-nowrap"
-          >
-            <Leaf className="h-4 w-4 mr-1" /> Kost och dryck
-          </Button>
-          <Button 
-            variant={activeCategory === 'mind' ? "default" : "outline"}
-            onClick={() => setActiveCategory('mind')}
-            size="sm"
-            className="whitespace-nowrap"
-          >
-            <Book className="h-4 w-4 mr-1" /> Sinnet
-          </Button>
-        </div>
-
         <CardContent className="p-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
-            {getFilteredActivities().map((activity) => {
-              const ActivityIcon = getActivityIcon(activity.name);
-              const isClaimed = claimedToday.includes(activity.id);
-              const title = getActivityTitle(activity.name);
-              const duration = getActivityDuration(activity.name);
-              
-              return (
-                <Card 
-                  key={activity.id} 
-                  className={`overflow-hidden transition-all aspect-square ${
-                    isClaimed ? 'bg-gray-100 border-green-300' : 'hover:shadow-md cursor-pointer'
-                  }`}
-                  onClick={() => !isClaimed && handleClaim(activity)}
-                >
-                  <CardContent className="p-4 flex flex-col justify-between h-full relative">
-                    {/* Info button in top right */}
-                    <div className="absolute top-0 right-0 p-1">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedActivity(activity);
-                            setInfoOpen(true);
-                          }}>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6 rounded-full bg-purple-50"
-                            >
-                              <Info className="h-3 w-3 text-purple-700" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">Visa info</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+          {Object.entries(groupedActivities).map(([category, activities]) => 
+            activities.length > 0 && (
+              <div key={category} className="mb-6">
+                <h3 className="font-semibold text-lg mb-3">{getCategoryTitle(category)}</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {activities.map((activity) => {
+                    const ActivityIcon = getActivityIcon(activity.name);
+                    const isClaimed = claimedToday.includes(activity.id);
+                    const title = getActivityTitle(activity.name);
+                    const duration = activity.duration || "";
                     
-                    {/* Icon in center top */}
-                    <div className="flex justify-center mb-2 mt-4">
-                      <ActivityIcon className="h-10 w-10 text-purple-600" />
-                    </div>
-                    
-                    {/* Activity name in center */}
-                    <div className="text-center">
-                      <h3 className="font-medium text-sm">{title}</h3>
-                      <p className="text-xs text-gray-500 mt-1">{duration}</p>
-                    </div>
-                    
-                    {/* Status banner if claimed */}
-                    {isClaimed && (
-                      <div className="absolute inset-0 bg-green-100/70 flex items-center justify-center">
-                        <div className="bg-white/80 py-1 px-3 rounded-full shadow-sm">
-                          <span className="text-green-600 text-xs font-semibold">Genomförd idag</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Points in bottom right */}
-                    <div className="absolute bottom-2 right-2">
-                      <span className="text-sm font-bold text-purple-700">{activity.points}p</span>
-                    </div>
-                    
-                    {/* Camera indicator */}
-                    {activity.requiresPhoto && (
-                      <div className="absolute bottom-2 left-2">
-                        <Camera className="h-4 w-4 text-gray-400" />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                    return (
+                      <Card 
+                        key={activity.id} 
+                        className={`overflow-hidden transition-all aspect-square ${
+                          isClaimed ? 'bg-gray-100 border-green-300' : 'hover:shadow-md cursor-pointer'
+                        }`}
+                        onClick={() => !isClaimed && handleClaim(activity)}
+                      >
+                        <CardContent className="p-2 flex flex-col justify-between h-full relative">
+                          {/* Info button in top right */}
+                          <div className="absolute top-0 right-0 p-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedActivity(activity);
+                                  setInfoOpen(true);
+                                }}>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 rounded-full bg-purple-50"
+                                  >
+                                    <Info className="h-3 w-3 text-purple-700" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Visa info</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          
+                          {/* Icon in center */}
+                          <div className="flex flex-col items-center justify-center mt-2 flex-1">
+                            <ActivityIcon className="h-8 w-8 text-purple-600 mb-2" />
+                            <h3 className="font-medium text-sm text-center">{title}</h3>
+                            <p className="text-xs text-gray-500 mt-1 text-center">{duration}</p>
+                          </div>
+                          
+                          {/* Status banner if claimed */}
+                          {isClaimed && (
+                            <div className="absolute inset-0 bg-green-100/70 flex flex-col items-center justify-center gap-2">
+                              <div className="bg-white/80 py-1 px-3 rounded-full shadow-sm">
+                                <span className="text-green-600 text-xs font-semibold">Genomförd idag</span>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-xs flex items-center gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUndoClaim(activity.id);
+                                }}
+                              >
+                                <RotateCcw className="h-3 w-3" /> Ångra
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {/* Points in bottom right */}
+                          <div className="absolute bottom-1 right-1">
+                            <span className="text-sm font-bold text-purple-700">{activity.points}p</span>
+                          </div>
+                          
+                          {/* Camera indicator */}
+                          {activity.requiresPhoto && (
+                            <div className="absolute bottom-1 left-1">
+                              <Camera className="h-3 w-3 text-gray-400" />
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )
+          )}
           
           {activeSection === 'personal' && personalActivities.length === 0 && (
             <div className="text-center p-8 text-gray-500">
@@ -412,7 +473,7 @@ const ActivityList = () => {
             </div>
           )}
 
-          {getFilteredActivities().length === 0 && (
+          {Object.values(groupedActivities).every(arr => arr.length === 0) && (
             <div className="text-center p-8 text-gray-500">
               Inga aktiviteter hittades i denna kategori.
             </div>

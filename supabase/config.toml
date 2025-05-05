@@ -1,1 +1,8 @@
-project_id = "cbypedcyszozqezowbbo"
+
+[functions]
+
+[realtime]
+enabled = true
+
+[realtime.tables.profiles]
+enabled = true
