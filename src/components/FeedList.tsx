@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -117,29 +116,28 @@ const FeedList = () => {
             // Get comments
             const { data: commentsData, error: commentsError } = await supabase
               .from('comments')
-              .select(`
-                id,
-                user_id,
-                content,
-                created_at,
-                profiles:user_id (
-                  name,
-                  profile_image_url
-                )
-              `)
+              .select('id, user_id, content, created_at')
               .eq('claimed_activity_id', item.id)
               .order('created_at', { ascending: true });
               
             if (commentsError) throw commentsError;
             
-            // Format comments
-            const formattedComments = (commentsData || []).map((comment) => ({
-              id: comment.id,
-              user_id: comment.user_id,
-              content: comment.content,
-              created_at: comment.created_at,
-              user_name: comment.profiles?.name || 'Användare',
-              profile_image_url: comment.profiles?.profile_image_url || null
+            // For each comment, fetch the user profile separately
+            const formattedComments = await Promise.all((commentsData || []).map(async (comment) => {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('name, profile_image_url')
+                .eq('id', comment.user_id)
+                .single();
+                
+              return {
+                id: comment.id,
+                user_id: comment.user_id,
+                content: comment.content,
+                created_at: comment.created_at,
+                user_name: profileData?.name || 'Användare',
+                profile_image_url: profileData?.profile_image_url || null
+              };
             }));
             
             return {
