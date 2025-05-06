@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Activity } from '@/types';
 import { toast } from "@/components/ui/sonner";
 import { useActivities } from '@/hooks/useActivities';
+import { supabase } from '@/integrations/supabase/client'; // Added missing import
 import CategorySection from './activities/CategorySection';
 import ActivityInfoDialog from './activities/ActivityInfoDialog';
 import ActivityConfirmDialog from './activities/ActivityConfirmDialog';
