@@ -1,15 +1,64 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Medal } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/sonner";
 import FeedList from '@/components/FeedList';
+import { useLeaderboardData } from '@/components/LeaderboardSummary';
 
 const Dashboard = () => {
   const [userName, setUserName] = useState('');
+  const [userPoints, setUserPoints] = useState(0);
   const [daysLeft, setDaysLeft] = useState(0);
-  const [timeUntilNextDay, setTimeUntilNextDay] = useState('');
+  const { users } = useLeaderboardData();
+
+  // Get current user's position and point information
+  const getUserPositionInfo = () => {
+    if (!users.length) return { position: 0, myPoints: 0, pointsText: "Laddar..." };
+    
+    // Sort users by total points
+    const sortedUsers = [...users].sort((a, b) => b.totalPoints - a.totalPoints);
+    
+    // Find current user's position
+    const currentUser = sortedUsers.find(user => user.name === userName);
+    if (!currentUser) return { position: 0, myPoints: 0, pointsText: "Laddar..." };
+    
+    const myPoints = currentUser.totalPoints;
+    const myPosition = sortedUsers.findIndex(user => user.name === userName) + 1;
+    
+    // If user is first place
+    if (myPosition === 1) {
+      const secondPlaceUser = sortedUsers[1];
+      const pointsAhead = secondPlaceUser ? myPoints - secondPlaceUser.totalPoints : 0;
+      
+      return {
+        position: myPosition,
+        myPoints,
+        pointsText: `Du ligger först med ${pointsAhead} poäng före tvåan`
+      };
+    } 
+    // User is not first
+    else {
+      const userAhead = sortedUsers[myPosition - 2]; // -2 because array is 0-indexed and we want the position ahead
+      const pointsNeeded = userAhead ? userAhead.totalPoints - myPoints : 0;
+      
+      return {
+        position: myPosition,
+        myPoints,
+        pointsText: `${pointsNeeded} poäng kvar för att komma ${getPositionText(myPosition - 1)}`
+      };
+    }
+  };
+  
+  const getPositionText = (position: number) => {
+    switch (position) {
+      case 1: return "etta";
+      case 2: return "tvåa";
+      case 3: return "trea";
+      default: return position + ":a";
+    }
+  };
 
   // Calculate days left in challenge
   useEffect(() => {
@@ -27,27 +76,6 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate time until next day
-  useEffect(() => {
-    const updateTimeUntilNextDay = () => {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      
-      const diff = tomorrow.getTime() - now.getTime();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      
-      setTimeUntilNextDay(`${hours}h ${minutes}m`);
-    };
-
-    updateTimeUntilNextDay();
-    const interval = setInterval(updateTimeUntilNextDay, 60000); // Update every minute
-    
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     const getProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -55,13 +83,14 @@ const Dashboard = () => {
         try {
           const { data, error } = await supabase
             .from('profiles')
-            .select('name')
+            .select('name, total_points')
             .eq('id', session.user.id)
             .single();
           
           if (error) throw error;
           if (data) {
             setUserName(data.name);
+            setUserPoints(data.total_points);
           }
         } catch (error: any) {
           console.error('Error fetching profile:', error);
@@ -70,7 +99,24 @@ const Dashboard = () => {
     };
 
     getProfile();
+    
+    // Subscribe to profile changes
+    const profileChannel = supabase
+      .channel('profile_updates')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'profiles' }, 
+        () => {
+          getProfile();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(profileChannel);
+    };
   }, []);
+
+  const positionInfo = getUserPositionInfo();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100 p-4">
@@ -84,16 +130,17 @@ const Dashboard = () => {
           <Card className="p-4 flex items-center">
             <Calendar className="h-5 w-5 text-purple-600 mr-2" />
             <div>
-              <p className="text-sm text-gray-500">Dagar kvar i utmaningen</p>
+              <p className="text-sm text-gray-500">Dagar kvar</p>
               <p className="font-bold text-lg">{daysLeft} dagar</p>
             </div>
           </Card>
           
           <Card className="p-4 flex items-center">
-            <Clock className="h-5 w-5 text-purple-600 mr-2" />
+            <Medal className="h-5 w-5 text-purple-600 mr-2" />
             <div>
-              <p className="text-sm text-gray-500">Ny dag börjar om</p>
-              <p className="font-bold text-lg">{timeUntilNextDay}</p>
+              <p className="text-sm text-gray-500">Mina poäng</p>
+              <p className="font-bold text-lg">{userPoints} poäng</p>
+              <p className="text-xs text-gray-500">{positionInfo.pointsText}</p>
             </div>
           </Card>
         </div>

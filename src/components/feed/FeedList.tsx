@@ -26,33 +26,34 @@ const FeedList = () => {
     fetchCurrentUser();
   }, []);
 
-  const { feedItems, loading } = useFeedData(currentUser);
+  const { feedItems, loading, updateItemLikes, addCommentToItem } = useFeedData(currentUser);
 
   const handleLike = async (item: FeedItemType) => {
     if (!currentUser) return;
     
     try {
+      // Optimistically update UI first
+      updateItemLikes(item.id, !item.userLiked);
+      
       if (item.userLiked) {
         // Unlike
-        const { error } = await supabase
+        await supabase
           .from('likes')
           .delete()
           .eq('claimed_activity_id', item.id)
           .eq('user_id', currentUser);
-          
-        if (error) throw error;
       } else {
         // Like
-        const { error } = await supabase
+        await supabase
           .from('likes')
           .insert({
             claimed_activity_id: item.id,
             user_id: currentUser
           });
-          
-        if (error) throw error;
       }
     } catch (error: any) {
+      // Revert optimistic update on error
+      updateItemLikes(item.id, item.userLiked);
       console.error("Error updating like:", error);
       toast.error(`Kunde inte uppdatera gillning: ${error.message}`);
     }
@@ -67,17 +68,24 @@ const FeedList = () => {
     if (!currentUser || !selectedItem) return;
     
     try {
-      const { error } = await supabase
+      // Optimistically update local state first
+      addCommentToItem(selectedItem.id, {
+        id: `temp-${Date.now()}`,
+        user_id: currentUser,
+        content: content,
+        created_at: new Date().toISOString(),
+        user_name: 'Du', // Temporary name until DB update comes through
+        profile_image_url: null
+      });
+      
+      // Then add to database
+      await supabase
         .from('comments')
         .insert({
           claimed_activity_id: selectedItem.id,
           user_id: currentUser,
           content: content.trim()
         });
-        
-      if (error) throw error;
-      
-      // Fetch updated comments will happen via realtime subscription
     } catch (error: any) {
       console.error("Error adding comment:", error);
       toast.error(`Kunde inte lägga till kommentar: ${error.message}`);

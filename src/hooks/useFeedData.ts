@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { FeedItem } from "@/components/feed/types";
+import { FeedItem, Comment } from "@/components/feed/types";
 import { toast } from "@/components/ui/sonner";
 
 export const useFeedData = (currentUser: string | null) => {
@@ -119,5 +119,41 @@ export const useFeedData = (currentUser: string | null) => {
     };
   }, [currentUser]);
 
-  return { feedItems, loading };
+  // Function to update likes optimistically
+  const updateItemLikes = (itemId: string, liked: boolean) => {
+    setFeedItems(prevItems => 
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            likes: liked ? item.likes + 1 : Math.max(0, item.likes - 1),
+            userLiked: liked
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Function to add a comment optimistically
+  const addCommentToItem = (itemId: string, newComment: Comment) => {
+    setFeedItems(prevItems => 
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            comments: [...item.comments, newComment]
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  return { 
+    feedItems, 
+    loading, 
+    updateItemLikes,
+    addCommentToItem
+  };
 };

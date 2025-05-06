@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Activity } from '@/types';
 import { getActivityIcon, getActivityTitle } from './utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -24,11 +25,14 @@ const ActivityCard = ({
   const ActivityIcon = getActivityIcon(activity.name);
   const title = getActivityTitle(activity.name);
   const duration = activity.duration || "";
+  const isMobile = useIsMobile();
   
   return (
     <Card 
       key={activity.id} 
-      className={`overflow-hidden transition-all hover:shadow-md cursor-pointer aspect-square max-h-[120px] ${
+      className={`overflow-hidden transition-all hover:shadow-md cursor-pointer aspect-square ${
+        isMobile ? 'min-h-[150px]' : 'max-h-[120px]'
+      } ${
         isClaimed ? 'bg-gray-100 border-green-300' : ''
       }`}
       onClick={() => !isClaimed && onClaim(activity)}
@@ -59,8 +63,8 @@ const ActivityCard = ({
         
         {/* Icon in center */}
         <div className="flex flex-col items-center justify-center flex-1">
-          <ActivityIcon className="h-6 w-6 text-purple-600 mb-1" />
-          <h3 className="font-medium text-xs text-center">{title}</h3>
+          <ActivityIcon className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} text-purple-600 mb-1`} />
+          <h3 className={`font-medium ${isMobile ? 'text-sm' : 'text-xs'} text-center`}>{title}</h3>
           <p className="text-xs text-gray-500 mt-1 text-center">{duration}</p>
         </div>
         
@@ -73,7 +77,7 @@ const ActivityCard = ({
             <Button 
               variant="outline" 
               size="sm" 
-              className="text-xs flex items-center gap-1 py-1 px-2 h-auto"
+              className={`text-xs flex items-center gap-1 py-1 px-2 h-auto ${isMobile ? 'text-sm' : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onUndo(activity.id);
@@ -86,13 +90,13 @@ const ActivityCard = ({
         
         {/* Points in bottom right */}
         <div className="absolute bottom-1 right-1">
-          <span className="text-xs font-bold text-purple-700">{activity.points}p</span>
+          <span className={`${isMobile ? 'text-sm' : 'text-xs'} font-bold text-purple-700`}>{activity.points}p</span>
         </div>
         
         {/* Camera indicator */}
         {activity.requiresPhoto && (
           <div className="absolute bottom-1 left-1">
-            <Camera className="h-3 w-3 text-gray-400" />
+            <Camera className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'} text-gray-400`} />
           </div>
         )}
       </CardContent>
