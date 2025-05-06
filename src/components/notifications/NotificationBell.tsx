@@ -16,12 +16,12 @@ const NotificationBell = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="relative"
+          className="relative p-0 h-auto w-auto"
           aria-label="Notifikationer"
         >
-          <Bell className="h-[1.2rem] w-[1.2rem] text-gray-600" />
+          <Bell className="h-6 w-6 text-gray-600" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500">
+            <span className="absolute top-0 right-0 flex h-2 w-2 rounded-full bg-red-500">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             </span>
           )}
