@@ -49,7 +49,7 @@ const NavBar = () => {
           );
         })}
         
-        <div className="relative">
+        <div className="relative h-7 w-7 flex items-center justify-center">
           <NotificationBell />
         </div>
       </nav>
