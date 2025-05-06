@@ -9,10 +9,13 @@ export const useActivityList = (user: { id: string } | null, refreshTrigger: num
   const [commonActivities, setCommonActivities] = useState<Activity[]>([]);
   const [personalActivities, setPersonalActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchActivities = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
         // Fetch common activities
         const { data: common, error: commonError } = await supabase
@@ -38,7 +41,7 @@ export const useActivityList = (user: { id: string } | null, refreshTrigger: num
         }
       } catch (error: any) {
         console.error("Error fetching activities:", error);
-        toast.error(`Kunde inte hämta aktiviteter: ${error.message}`);
+        setError(`Kunde inte hämta aktiviteter: ${error.message}`);
       } finally {
         setLoading(false);
       }
@@ -50,6 +53,7 @@ export const useActivityList = (user: { id: string } | null, refreshTrigger: num
   return {
     commonActivities,
     personalActivities,
-    loading
+    loading,
+    error
   };
 };

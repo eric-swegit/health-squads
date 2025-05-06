@@ -12,13 +12,15 @@ export const useActivities = () => {
   const { 
     commonActivities, 
     personalActivities, 
-    loading: activitiesLoading 
+    loading: activitiesLoading,
+    error: activitiesError
   } = useActivityList(user, lastRefresh);
   
   const {
     claimedToday,
     saveClaimedActivity,
-    undoClaimActivity
+    undoClaimActivity,
+    error: claimedError
   } = useClaimedActivities(user, lastRefresh);
 
   const refreshData = () => {
@@ -26,14 +28,17 @@ export const useActivities = () => {
   };
 
   const loading = authLoading || activitiesLoading;
+  const error = activitiesError || claimedError;
 
   return {
     commonActivities,
     personalActivities,
     claimedToday,
     loading,
+    error,
     user,
     saveClaimedActivity,
-    undoClaimActivity
+    undoClaimActivity,
+    refreshData
   };
 };

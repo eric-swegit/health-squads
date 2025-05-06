@@ -22,6 +22,7 @@ const ActivityList = () => {
     personalActivities,
     claimedToday,
     loading,
+    error,
     user,
     saveClaimedActivity,
     undoClaimActivity
@@ -99,6 +100,8 @@ const ActivityList = () => {
     return activeSection === 'common' ? commonActivities : personalActivities;
   };
 
+  const hasActivities = commonActivities.length > 0 || personalActivities.length > 0;
+
   return (
     <div className="space-y-4">
       <Card className="p-4">
@@ -108,17 +111,23 @@ const ActivityList = () => {
         />
 
         <CardContent className="p-0">
-          <ActivityCategories
-            activities={getActivitiesBySection()}
-            activeSection={activeSection}
-            claimedToday={claimedToday}
-            onClaim={handleClaim}
-            onInfo={(activity) => {
-              setSelectedActivity(activity);
-              setInfoOpen(true);
-            }}
-            onUndo={handleUndoClaim}
-          />
+          {error ? (
+            <div className="text-center p-8 text-red-500">
+              Ett fel uppstod: {error}. Försök igen senare.
+            </div>
+          ) : (
+            <ActivityCategories
+              activities={getActivitiesBySection()}
+              activeSection={activeSection}
+              claimedToday={claimedToday}
+              onClaim={handleClaim}
+              onInfo={(activity) => {
+                setSelectedActivity(activity);
+                setInfoOpen(true);
+              }}
+              onUndo={handleUndoClaim}
+            />
+          )}
         </CardContent>
       </Card>
 

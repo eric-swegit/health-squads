@@ -9,6 +9,7 @@ import {
   GlassWater,
   LucideIcon
 } from "lucide-react";
+import { Activity } from '@/types';
 
 export const activityInfo: Record<string, string> = {
   "Mindfulness 20 min": "Mindfulness kan exempelvis vara att läsa bok, lösa soduko, meditera eller annat liknande, denna aktivitet ska vara helt SKÄRMFRI.",
@@ -79,16 +80,23 @@ export const getCategoryTitle = (category: string): string => {
   }
 };
 
-export const groupActivitiesByCategory = (activities: any[]): {[key: string]: any[]} => {
-  const grouped: {[key: string]: any[]} = {
+export const groupActivitiesByCategory = (activities: Activity[]): {[key: string]: Activity[]} => {
+  const grouped: {[key: string]: Activity[]} = {
     'physical': [],
     'diet': [],
     'mind': []
   };
 
   activities.forEach(activity => {
-    if (activity.category) {
-      grouped[activity.category].push(activity);
+    // Ensure activity has a category, use getActivityCategory as a fallback
+    const category = activity.category || getActivityCategory(activity.name);
+    
+    if (grouped[category]) {
+      grouped[category].push(activity);
+    } else {
+      // If for some reason the category doesn't match our predefined ones,
+      // default to 'mind'
+      grouped['mind'].push(activity);
     }
   });
 

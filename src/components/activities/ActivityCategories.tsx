@@ -22,6 +22,7 @@ const ActivityCategories = ({
   onUndo 
 }: ActivityCategoriesProps) => {
   const groupedActivities = groupActivitiesByCategory(activities);
+  const hasAnyActivities = activities.length > 0;
   const hasCategories = Object.values(groupedActivities).some(arr => arr.length > 0);
   
   return (
