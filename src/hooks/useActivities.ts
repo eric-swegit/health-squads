@@ -12,6 +12,7 @@ export const useActivities = () => {
   const [claimedToday, setClaimedToday] = useState<string[]>([]);
   const [claimedIds, setClaimedIds] = useState<{[key: string]: string}>({});
   const [user, setUser] = useState<any>(null);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
   useEffect(() => {
     // Get the current user
@@ -102,12 +103,43 @@ export const useActivities = () => {
     };
 
     fetchActivities();
-  }, []);
+
+    // Set up realtime subscription to claimed_activities changes
+    const claimedChannel = supabase
+      .channel('claimed_activities_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'claimed_activities' }, 
+        (payload) => {
+          console.log('Activity claimed/unclaimed:', payload);
+          // Trigger a refresh of the activities data
+          setLastRefresh(Date.now());
+        }
+      )
+      .subscribe();
+
+    // Subscribe to profile changes to update points
+    const profileChannel = supabase
+      .channel('profile_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'profiles' }, 
+        (payload) => {
+          console.log('Profile updated:', payload);
+          // Refresh when points change
+          setLastRefresh(Date.now());
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(claimedChannel);
+      supabase.removeChannel(profileChannel);
+    };
+  }, [lastRefresh]);
 
   const saveClaimedActivity = async (activity: Activity, photoUrl?: string) => {
     if (!user) {
       toast.error("Du måste vara inloggad för att claima aktiviteter");
-      return;
+      return false;
     }
     
     const today = new Date().toISOString().split('T')[0];
@@ -169,12 +201,20 @@ export const useActivities = () => {
       delete newClaimedIds[activityId];
       setClaimedIds(newClaimedIds);
       
+      // Trigger a refresh to ensure points are updated
+      setLastRefresh(Date.now());
+      
       toast.success("Aktiviteten har ångrats");
       return true;
     } catch (error: any) {
       toast.error(`Kunde inte ångra aktivitet: ${error.message}`);
       return false;
     }
+  };
+
+  // Function to manually refresh the data
+  const refreshActivities = () => {
+    setLastRefresh(Date.now());
   };
 
   return {
@@ -184,6 +224,7 @@ export const useActivities = () => {
     loading,
     user,
     saveClaimedActivity,
-    undoClaimActivity
+    undoClaimActivity,
+    refreshActivities
   };
 };
