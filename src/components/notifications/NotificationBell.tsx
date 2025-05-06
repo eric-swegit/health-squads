@@ -19,7 +19,7 @@ const NotificationBell = () => {
           className="relative p-0 h-auto w-auto"
           aria-label="Notifikationer"
         >
-          <BellRing className="h-12 w-12 text-gray-500" />
+          <BellRing className="h-7 w-7 text-gray-500" />
           {unreadCount > 0 && (
             <span className="absolute top-0 right-0 flex h-2 w-2 rounded-full bg-red-500">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
