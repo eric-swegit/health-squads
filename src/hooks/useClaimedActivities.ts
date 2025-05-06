@@ -89,14 +89,13 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       // Show a pending toast
       const pendingToast = toast.loading("Tar bort aktivitet...");
       
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      console.log(`Attempting to delete activity: ${activityId} for user: ${user.id}`);
       
-      console.log(`Attempting to delete activity: ${activityId} for user: ${user.id} on date: ${today}`);
-      
+      // Remove the date condition from the match to prevent timezone issues
       const { error, count } = await supabase
         .from('claimed_activities')
         .delete({ count: 'exact' })
-        .match({ user_id: user.id, activity_id: activityId, date: today });
+        .match({ user_id: user.id, activity_id: activityId });
 
       if (error) throw error;
       
@@ -110,9 +109,8 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       toast.dismiss(pendingToast);
       toast.success("Aktivitet borttagen");
       
-      // Force a delay to ensure the database transaction completes
-      // Increased from 500ms to 1500ms to allow for database transaction completion
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Reduced back to 500ms as requested by the user
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       return true;
     } catch (error: any) {
