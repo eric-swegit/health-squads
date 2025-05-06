@@ -35,10 +35,16 @@ export const useNotifications = () => {
           
         if (error) throw error;
         
-        setNotifications(data || []);
+        // Type assertion to ensure the expected notification types
+        const typedNotifications = (data || []).map(item => ({
+          ...item,
+          type: item.type as 'like' | 'comment' | 'leaderboard_daily' | 'leaderboard_total'
+        }));
+        
+        setNotifications(typedNotifications);
         
         // Calculate unread count
-        const unread = (data || []).filter(n => !n.is_read).length;
+        const unread = typedNotifications.filter(n => !n.is_read).length;
         setUnreadCount(unread);
       } catch (error: any) {
         console.error('Error fetching notifications:', error);
