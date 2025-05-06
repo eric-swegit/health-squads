@@ -16,6 +16,7 @@ const ActivityList = () => {
   const [infoOpen, setInfoOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<'common' | 'personal'>('common');
+  const [undoInProgress, setUndoInProgress] = useState(false);
 
   const {
     commonActivities,
@@ -25,7 +26,8 @@ const ActivityList = () => {
     error,
     user,
     saveClaimedActivity,
-    undoClaimActivity
+    undoClaimActivity,
+    refreshData
   } = useActivities();
 
   const handleClaim = async (activity: Activity) => {
@@ -67,6 +69,9 @@ const ActivityList = () => {
 
             // Save claimed activity with photo URL
             await saveClaimedActivity(activity, urlData.publicUrl);
+            
+            // Refresh data after claim
+            refreshData();
           } catch (error: any) {
             toast.error(`Uppladdning misslyckades: ${error.message}`);
           }
@@ -84,12 +89,28 @@ const ActivityList = () => {
       const success = await saveClaimedActivity(selectedActivity);
       if (success) {
         setConfirmOpen(false);
+        // Refresh data after claim
+        refreshData();
       }
     }
   };
 
   const handleUndoClaim = async (activityId: string) => {
-    await undoClaimActivity(activityId);
+    if (undoInProgress) {
+      toast.info("En annan aktivitet bearbetas redan, vänta lite");
+      return;
+    }
+    
+    setUndoInProgress(true);
+    try {
+      const success = await undoClaimActivity(activityId);
+      if (success) {
+        // Force a refresh after the undo completes successfully
+        setTimeout(() => refreshData(), 500);
+      }
+    } finally {
+      setUndoInProgress(false);
+    }
   };
 
   if (loading) {
