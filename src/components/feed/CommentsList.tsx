@@ -3,6 +3,7 @@ import {
   Dialog, 
   DialogContent,
   DialogHeader,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,13 +95,23 @@ const CommentsList = ({ open, onOpenChange, selectedItem, onAddComment }: Commen
           .eq('comment_id', comment.id)
           .eq('user_id', currentUser);
       } else {
-        // Like
-        await supabase
+        // Like - Check if already liked first to prevent duplicate key errors
+        const { data: existingLike } = await supabase
           .from('comment_likes')
-          .insert({
-            comment_id: comment.id,
-            user_id: currentUser
-          });
+          .select('id')
+          .eq('comment_id', comment.id)
+          .eq('user_id', currentUser)
+          .maybeSingle();
+          
+        if (!existingLike) {
+          // Only insert if not already liked
+          await supabase
+            .from('comment_likes')
+            .insert({
+              comment_id: comment.id,
+              user_id: currentUser
+            });
+        }
       }
     } catch (error: any) {
       console.error("Error liking comment:", error);
@@ -111,6 +122,9 @@ const CommentsList = ({ open, onOpenChange, selectedItem, onAddComment }: Commen
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogDescription className="sr-only">
+          Kommentarer för inlägg
+        </DialogDescription>
         <DialogHeader className="px-4 py-2 border-b">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Kommentarer</h2>

@@ -129,20 +129,32 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
           .eq('comment_id', comment.id)
           .eq('user_id', currentUser);
       } else {
-        // Like
-        await supabase
+        // Like - Check if already liked first to prevent duplicate key errors
+        const { data: existingLike } = await supabase
           .from('comment_likes')
-          .insert({
-            comment_id: comment.id,
-            user_id: currentUser
-          });
+          .select('id')
+          .eq('comment_id', comment.id)
+          .eq('user_id', currentUser)
+          .maybeSingle();
+          
+        if (!existingLike) {
+          // Only insert if not already liked
+          await supabase
+            .from('comment_likes')
+            .insert({
+              comment_id: comment.id,
+              user_id: currentUser
+            });
+        }
       }
     } catch (error: any) {
       console.error("Error liking comment:", error);
       toast.error(`Kunde inte uppdatera gillning: ${error.message}`);
       
       // Revert local state if the API call fails
-      setLocalComments(selectedItem.comments);
+      if (selectedItem) {
+        setLocalComments(selectedItem.comments);
+      }
     }
   };
 
