@@ -104,7 +104,6 @@ const NavBar = () => {
         
         <div className="flex flex-col items-center py-2 px-4">
           <NotificationBell />
-          <span className="text-xs mt-1">Notiser</span>
         </div>
       </nav>
     </div>
