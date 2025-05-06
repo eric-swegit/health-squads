@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, X } from "lucide-react";
+import { Send } from "lucide-react";
 import { useState } from "react";
 import CommentItem from "./CommentItem";
 import { FeedItem, Comment } from "./types";
@@ -117,9 +117,6 @@ const CommentsList = ({ open, onOpenChange, selectedItem, onAddComment }: Commen
         <DialogHeader className="px-4 py-2 border-b">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Kommentarer</h2>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </DialogHeader>
         

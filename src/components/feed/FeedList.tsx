@@ -64,10 +64,14 @@ const FeedList = () => {
     setCommentDialogOpen(true);
   };
 
-  const handleAddComment = async (content: string) => {
-    if (!currentUser || !selectedItem) return;
+  const handleAddComment = async (itemId: string, content: string) => {
+    if (!currentUser) return;
     
     try {
+      // Find the item
+      const item = feedItems.find(item => item.id === itemId);
+      if (!item) return;
+      
       // Generate a temporary ID for optimistic UI update
       const tempId = `temp-${Date.now()}`;
       
@@ -84,13 +88,13 @@ const FeedList = () => {
       };
       
       // Optimistically update local state first
-      addCommentToItem(selectedItem.id, newComment);
+      addCommentToItem(itemId, newComment);
       
       // Then add to database
       await supabase
         .from('comments')
         .insert({
-          claimed_activity_id: selectedItem.id,
+          claimed_activity_id: itemId,
           user_id: currentUser,
           content: content.trim()
         });
@@ -124,6 +128,7 @@ const FeedList = () => {
           onLike={handleLike}
           onOpenComments={openCommentDialog}
           onOpenImage={openImageDialog}
+          onAddComment={handleAddComment}
         />
       ))}
       
@@ -132,7 +137,7 @@ const FeedList = () => {
         open={commentDialogOpen}
         onOpenChange={setCommentDialogOpen}
         selectedItem={selectedItem}
-        onAddComment={handleAddComment}
+        onAddComment={(comment) => selectedItem && handleAddComment(selectedItem.id, comment)}
       />
       
       {/* Image Dialog */}
