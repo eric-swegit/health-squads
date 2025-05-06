@@ -40,9 +40,9 @@ export const useFeedData = (currentUser: string | null) => {
               .select('id')
               .eq('claimed_activity_id', item.id)
               .eq('user_id', currentUser)
-              .single();
+              .maybeSingle(); // Changed from single() to maybeSingle()
               
-            const userLiked = !userLikeError && userLikeData;
+            const userLiked = !userLikeError && userLikeData !== null;
 
             // Get comments
             const { data: commentsData, error: commentsError } = await supabase
@@ -59,7 +59,7 @@ export const useFeedData = (currentUser: string | null) => {
                 .from('profiles')
                 .select('name, profile_image_url')
                 .eq('id', comment.user_id)
-                .single();
+                .maybeSingle(); // Changed from single() to maybeSingle()
                 
               // Get comment likes count
               // Use a raw query for now since comment_likes isn't in the type definition yet
@@ -75,9 +75,9 @@ export const useFeedData = (currentUser: string | null) => {
                 .select('id')
                 .eq('comment_id', comment.id)
                 .eq('user_id', currentUser)
-                .single();
+                .maybeSingle(); // Changed from single() to maybeSingle()
                 
-              const userLikedComment = !userCommentLikeError && userCommentLikeData;
+              const userLikedComment = !userCommentLikeError && userCommentLikeData !== null;
               
               return {
                 id: comment.id,

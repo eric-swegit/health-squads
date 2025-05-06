@@ -111,7 +111,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       toast.success("Aktivitet borttagen");
       
       // Force a delay to ensure the database transaction completes
-      // Increased from 500ms to 1500ms
+      // Increased from 500ms to 1500ms to allow for database transaction completion
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       return true;

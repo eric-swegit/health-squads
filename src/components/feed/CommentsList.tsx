@@ -85,9 +85,6 @@ const CommentsList = ({ open, onOpenChange, selectedItem, onAddComment }: Commen
         return c;
       });
       
-      // Update the local state with updated comments
-      const updatedItem = { ...selectedItem, comments: updatedComments };
-      
       // API call to update like
       if (comment.userLiked) {
         // Unlike

@@ -42,7 +42,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
           .from('profiles')
           .select('name, profile_image_url')
           .eq('id', data.session.user.id)
-          .single();
+          .maybeSingle(); // Changed from single() to maybeSingle()
           
         if (!error && profileData) {
           setCurrentUserName(profileData.name);
