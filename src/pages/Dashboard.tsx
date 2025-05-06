@@ -100,6 +100,11 @@ const Dashboard = () => {
 
     getProfile();
     
+    // Initialize last viewed feed time if not set
+    if (!localStorage.getItem('lastViewedFeed')) {
+      localStorage.setItem('lastViewedFeed', new Date().toISOString());
+    }
+    
     // Subscribe to profile changes
     const profileChannel = supabase
       .channel('profile_updates')

@@ -1,10 +1,67 @@
 
-import { Home, Trophy, Activity as ActivityIcon, User } from "lucide-react";
+import { Home, Trophy, Activity as ActivityIcon, User, Bell } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import NotificationBell from "./notifications/NotificationBell";
 
 const NavBar = () => {
   const location = useLocation();
   const path = location.pathname;
+  const [newPosts, setNewPosts] = useState(false);
+  const [lastViewedFeed, setLastViewedFeed] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // Load last viewed time from localStorage
+    const storedDate = localStorage.getItem('lastViewedFeed');
+    if (storedDate) {
+      setLastViewedFeed(new Date(storedDate));
+    }
+
+    // Check for new feed items
+    const checkNewFeedItems = async () => {
+      if (!lastViewedFeed) return;
+
+      const { data, error } = await supabase
+        .from('feed_activities')
+        .select('created_at')
+        .gt('created_at', lastViewedFeed.toISOString())
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        setNewPosts(true);
+      }
+    };
+
+    checkNewFeedItems();
+
+    // Subscribe to feed changes
+    const feedChannel = supabase
+      .channel('feed_updates')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'claimed_activities' }, 
+        () => {
+          if (path !== '/') {
+            setNewPosts(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(feedChannel);
+    };
+  }, [lastViewedFeed, path]);
+
+  // Update last viewed time when visiting feed
+  useEffect(() => {
+    if (path === '/') {
+      const now = new Date();
+      localStorage.setItem('lastViewedFeed', now.toISOString());
+      setLastViewedFeed(now);
+      setNewPosts(false);
+    }
+  }, [path]);
 
   const isActivePath = (route: string) => {
     return path === route;
@@ -19,23 +76,36 @@ const NavBar = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-      <nav className="flex justify-around">
+      <nav className="flex justify-around items-center">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(item.path);
+          const showNewIndicator = item.path === '/' && newPosts;
+          
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center py-2 px-4 ${
+              className={`flex flex-col items-center py-2 px-4 relative ${
                 active ? "text-purple-600" : "text-gray-600"
               }`}
             >
               <Icon className={`h-6 w-6 ${active ? "text-purple-600" : "text-gray-500"}`} />
               <span className="text-xs mt-1">{item.label}</span>
+              
+              {showNewIndicator && (
+                <span className="absolute top-1 right-2 flex h-2 w-2 rounded-full bg-red-500">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                </span>
+              )}
             </Link>
           );
         })}
+        
+        <div className="flex flex-col items-center py-2 px-4">
+          <NotificationBell />
+          <span className="text-xs mt-1">Notiser</span>
+        </div>
       </nav>
     </div>
   );

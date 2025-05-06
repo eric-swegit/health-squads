@@ -170,6 +170,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          activity_id: string | null
+          content: string
+          created_at: string
+          from_user_id: string | null
+          id: string
+          is_read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          activity_id?: string | null
+          content: string
+          created_at?: string
+          from_user_id?: string | null
+          id?: string
+          is_read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string | null
+          content?: string
+          created_at?: string
+          from_user_id?: string | null
+          id?: string
+          is_read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "claimed_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "feed_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
