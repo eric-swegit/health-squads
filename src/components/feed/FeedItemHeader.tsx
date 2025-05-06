@@ -15,8 +15,11 @@ const FeedItemHeader = ({ item }: FeedItemHeaderProps) => {
     <CardHeader className="p-4 pb-0">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <Avatar>
-            <AvatarImage src={item.profile_image_url || undefined} />
+          <Avatar className="h-10 w-10 overflow-hidden">
+            <AvatarImage 
+              src={item.profile_image_url || undefined} 
+              className="object-cover"
+            />
             <AvatarFallback>{item.user_name.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div>

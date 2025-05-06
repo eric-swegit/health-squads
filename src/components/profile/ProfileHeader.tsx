@@ -13,6 +13,8 @@ import { Trophy } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from "@/types/profile";
+import { useState } from "react";
+import ImageCropper from "./ImageCropper";
 
 interface ProfileHeaderProps {
   profile: UserProfile | null;
@@ -21,20 +23,38 @@ interface ProfileHeaderProps {
 }
 
 const ProfileHeader = ({ profile, uploadingImage, setUploadingImage }: ProfileHeaderProps) => {
-  const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !profile) return;
+    
+    setSelectedFile(file);
+    // Create a temporary URL for the selected image to preview in the cropper
+    const imageUrl = URL.createObjectURL(file);
+    setCropImageUrl(imageUrl);
+  };
+  
+  const handleCropCancel = () => {
+    setCropImageUrl(null);
+    setSelectedFile(null);
+  };
+
+  const handleCropComplete = async (croppedImageBlob: Blob) => {
+    if (!profile) return;
     
     try {
       setUploadingImage(true);
       
-      // Upload image to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}_${Date.now()}.${fileExt}`;
+      // Create a file from the cropped blob
+      const fileName = `${profile.id}_${Date.now()}.jpg`;
+      const croppedFile = new File([croppedImageBlob], fileName, { type: 'image/jpeg' });
       
+      // Upload the cropped image to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-images')
-        .upload(fileName, file);
+        .upload(fileName, croppedFile);
         
       if (uploadError) throw uploadError;
       
@@ -57,6 +77,8 @@ const ProfileHeader = ({ profile, uploadingImage, setUploadingImage }: ProfileHe
       toast.error(`Kunde inte ladda upp bild: ${error.message}`);
     } finally {
       setUploadingImage(false);
+      setCropImageUrl(null);
+      setSelectedFile(null);
     }
   };
 
@@ -76,7 +98,7 @@ const ProfileHeader = ({ profile, uploadingImage, setUploadingImage }: ProfileHe
                 type="file" 
                 accept="image/*" 
                 className="hidden" 
-                onChange={handleProfileImageUpload}
+                onChange={handleFileSelect}
                 disabled={uploadingImage}
               />
             </label>
@@ -92,6 +114,16 @@ const ProfileHeader = ({ profile, uploadingImage, setUploadingImage }: ProfileHe
           </div>
         </div>
       </CardContent>
+      
+      {/* Image Cropper Dialog */}
+      {cropImageUrl && (
+        <ImageCropper
+          imageUrl={cropImageUrl}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          aspectRatio={1} // Square aspect ratio for profile image
+        />
+      )}
     </Card>
   );
 };
