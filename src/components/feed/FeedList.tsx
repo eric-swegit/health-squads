@@ -3,14 +3,14 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import FeedItem from "./FeedItem";
-import CommentsList from "./CommentsList";
+import CommentsDrawer from "./CommentsDrawer";
 import ImageViewer from "./ImageViewer";
 import { FeedItem as FeedItemType, Comment } from "./types";
 import { useFeedData } from "@/hooks/useFeedData";
 
 const FeedList = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [commentDrawerOpen, setCommentDrawerOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FeedItemType | null>(null);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -59,19 +59,15 @@ const FeedList = () => {
     }
   };
 
-  const openCommentDialog = (item: FeedItemType) => {
+  const openCommentDrawer = (item: FeedItemType) => {
     setSelectedItem(item);
-    setCommentDialogOpen(true);
+    setCommentDrawerOpen(true);
   };
 
-  const handleAddComment = async (itemId: string, content: string) => {
-    if (!currentUser) return;
+  const handleAddComment = async (content: string) => {
+    if (!currentUser || !selectedItem) return;
     
     try {
-      // Find the item
-      const item = feedItems.find(item => item.id === itemId);
-      if (!item) return;
-      
       // Generate a temporary ID for optimistic UI update
       const tempId = `temp-${Date.now()}`;
       
@@ -88,13 +84,13 @@ const FeedList = () => {
       };
       
       // Optimistically update local state first
-      addCommentToItem(itemId, newComment);
+      addCommentToItem(selectedItem.id, newComment);
       
       // Then add to database
       await supabase
         .from('comments')
         .insert({
-          claimed_activity_id: itemId,
+          claimed_activity_id: selectedItem.id,
           user_id: currentUser,
           content: content.trim()
         });
@@ -126,18 +122,18 @@ const FeedList = () => {
           key={item.id} 
           item={item} 
           onLike={handleLike}
-          onOpenComments={openCommentDialog}
+          onOpenComments={openCommentDrawer}
           onOpenImage={openImageDialog}
           onAddComment={handleAddComment}
         />
       ))}
       
-      {/* Comments Dialog */}
-      <CommentsList 
-        open={commentDialogOpen}
-        onOpenChange={setCommentDialogOpen}
+      {/* Comments Drawer */}
+      <CommentsDrawer 
+        open={commentDrawerOpen}
+        onOpenChange={setCommentDrawerOpen}
         selectedItem={selectedItem}
-        onAddComment={(comment) => selectedItem && handleAddComment(selectedItem.id, comment)}
+        onAddComment={handleAddComment}
       />
       
       {/* Image Dialog */}

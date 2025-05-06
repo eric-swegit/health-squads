@@ -29,33 +29,12 @@ const FeedItemFooter = ({ item, onLike, onOpenComments, onComment }: FeedItemFoo
           variant="ghost" 
           size="sm" 
           className="h-8 px-2 text-xs flex items-center gap-1"
-          onClick={() => {
-            if (item.comments.length > 0) {
-              onOpenComments(item);
-            } else {
-              onComment();
-            }
-          }}
+          onClick={() => onOpenComments(item)}
         >
           <MessageSquare className="h-4 w-4" />
           {item.comments.length > 0 && <span>{item.comments.length} kommentarer</span>}
         </Button>
       </div>
-      
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="h-8 px-2 text-xs"
-        onClick={() => {
-          if (item.comments.length > 0) {
-            onOpenComments(item);
-          } else {
-            onComment();
-          }
-        }}
-      >
-        Kommentera
-      </Button>
     </CardFooter>
   );
 };

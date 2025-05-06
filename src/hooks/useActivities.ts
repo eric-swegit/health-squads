@@ -13,9 +13,9 @@ const mapDbActivityToActivity = (dbActivity: any): Activity => {
     requiresPhoto: dbActivity.requires_photo,
     type: dbActivity.type,
     userId: dbActivity.user_id,
-    category: dbActivity.category,
-    duration: dbActivity.duration,
-    amount: dbActivity.amount
+    category: dbActivity.category || null,
+    duration: dbActivity.duration || null,
+    amount: dbActivity.amount || null
   };
 };
 
