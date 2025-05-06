@@ -46,7 +46,7 @@ const Dashboard = () => {
       return {
         position: myPosition,
         myPoints,
-        pointsText: `${pointsNeeded} poäng kvar för att komma ${getPositionText(myPosition - 1)}`
+        pointsText: `Du ligger ${getPositionText(myPosition)} med ${pointsNeeded} poäng efter ${getPositionText(myPosition - 1)}`
       };
     }
   };
