@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Activity } from '@/types';
-import { getActivityIcon, getActivityTitle } from './utils';
+import { getActivityIcon, getActivityTitle, getActivityDuration } from './utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ActivityCardProps {
@@ -24,7 +24,7 @@ const ActivityCard = ({
 }: ActivityCardProps) => {
   const ActivityIcon = getActivityIcon(activity.name);
   const title = getActivityTitle(activity.name);
-  const duration = activity.duration || "";
+  const duration = activity.duration || getActivityDuration(activity.name);
   const isMobile = useIsMobile();
   
   return (
