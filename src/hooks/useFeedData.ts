@@ -62,12 +62,14 @@ export const useFeedData = (currentUser: string | null) => {
                 .single();
                 
               // Get comment likes count
+              // Use a raw query for now since comment_likes isn't in the type definition yet
               const { count: commentLikesCount, error: commentLikesError } = await supabase
                 .from('comment_likes')
                 .select('*', { count: 'exact', head: true })
                 .eq('comment_id', comment.id);
                 
               // Check if current user liked this comment
+              // Use a raw query for now
               const { data: userCommentLikeData, error: userCommentLikeError } = await supabase
                 .from('comment_likes')
                 .select('id')
@@ -121,22 +123,19 @@ export const useFeedData = (currentUser: string | null) => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'likes' },
         () => {
-          // Instead of reloading everything, we could update the specific item
-          fetchFeedItems();
+          // We're handling likes optimistically, so no need to reload everything
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'comments' },
         () => {
-          // Instead of reloading everything, we could update the specific item
           fetchFeedItems();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'comment_likes' },
         () => {
-          // Instead of reloading everything, we could update the specific item
-          fetchFeedItems();
+          // We're handling comment likes optimistically, so no need to reload everything
         }
       )
       .subscribe();

@@ -194,6 +194,14 @@ export const useActivities = () => {
     try {
       console.log("Deleting claimed activity with id:", claimedId);
       
+      // Immediately update local state to give user feedback
+      setClaimedToday(claimedToday.filter(id => id !== activityId));
+      
+      // Remove from claimedIds map
+      const newClaimedIds = {...claimedIds};
+      delete newClaimedIds[activityId];
+      setClaimedIds(newClaimedIds);
+      
       const { error } = await supabase
         .from('claimed_activities')
         .delete()
@@ -201,18 +209,13 @@ export const useActivities = () => {
 
       if (error) {
         console.error("Supabase delete error:", error);
+        // Revert local state changes on error
+        setClaimedToday([...claimedToday]);
+        setClaimedIds({...claimedIds});
         throw error;
       }
 
       console.log("Successfully deleted claimed activity");
-      
-      // Update local state
-      setClaimedToday(claimedToday.filter(id => id !== activityId));
-      
-      // Remove from claimedIds map
-      const newClaimedIds = {...claimedIds};
-      delete newClaimedIds[activityId];
-      setClaimedIds(newClaimedIds);
       
       // Trigger a refresh to ensure points are updated
       setLastRefresh(Date.now());

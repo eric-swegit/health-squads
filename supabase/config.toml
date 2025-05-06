@@ -15,3 +15,6 @@ enabled = true
 
 [realtime.tables.comments]
 enabled = true
+
+[realtime.tables.comment_likes]
+enabled = true
