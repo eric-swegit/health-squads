@@ -7,14 +7,12 @@ import {
   DrawerTitle,
   DrawerFooter
 } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
-import CommentItem from "./CommentItem";
 import { FeedItem, Comment } from "./types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import CommentItem from "./CommentItem";
+import CommentDrawerActivity from "./CommentDrawerActivity";
+import CommentInput from "./CommentInput";
 
 interface CommentsDrawerProps {
   open: boolean;
@@ -32,6 +30,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
 
+  // Fetch current user
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data } = await supabase.auth.getSession();
@@ -86,7 +85,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
         user_id: currentUser || '',
         content: newComment,
         created_at: new Date().toISOString(),
-        user_name: currentUserName || 'Du', // Use actual username instead of "Du"
+        user_name: currentUserName || 'Du',
         profile_image_url: currentUserImage,
         likes: 0,
         userLiked: false
@@ -100,13 +99,6 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
       
       // Clear the input
       setNewComment("");
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleAddComment();
     }
   };
 
@@ -162,27 +154,9 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
         </DrawerHeader>
         
         {/* Activity Content */}
-        {selectedItem && (
-          <div className="p-4 border-b">
-            <div className="flex items-center space-x-3">
-              <Avatar>
-                <AvatarImage src={selectedItem.profile_image_url || undefined} />
-                <AvatarFallback>{selectedItem.user_name.substring(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold">{selectedItem.user_name}</p>
-                <p className="text-sm text-gray-500">{selectedItem.activity_name}</p>
-              </div>
-            </div>
-            {selectedItem.photo_url && (
-              <div className="mt-2">
-                <img src={selectedItem.photo_url} alt="Activity" className="w-full h-auto rounded-md" />
-              </div>
-            )}
-          </div>
-        )}
+        {selectedItem && <CommentDrawerActivity item={selectedItem} />}
         
-        {/* Comments List - Using localComments instead of selectedItem.comments */}
+        {/* Comments List */}
         <div 
           ref={commentsContainerRef}
           className="flex-1 overflow-y-auto p-4 space-y-4"
@@ -201,26 +175,13 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
         </div>
         
         {/* Comment Input */}
-        <DrawerFooter className="p-3 border-t flex items-end gap-2">
-          <div className="flex items-end gap-2 w-full">
-            <Textarea 
-              ref={commentInputRef}
-              placeholder="Skriv en kommentar..." 
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="min-h-[60px] resize-none flex-1"
-              rows={1}
-            />
-            <Button 
-              onClick={handleAddComment} 
-              disabled={!newComment.trim()} 
-              size="icon"
-              className="h-10 w-10 shrink-0"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </div>
+        <DrawerFooter className="p-3 border-t">
+          <CommentInput
+            value={newComment}
+            onChange={setNewComment}
+            onSubmit={handleAddComment}
+            inputRef={commentInputRef}
+          />
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

@@ -7,3 +7,6 @@ export { default as FeedItemFooter } from './FeedItemFooter';
 export { default as CommentsList } from './CommentsList';
 export { default as CommentItem } from './CommentItem';
 export { default as ImageViewer } from './ImageViewer';
+export { default as CommentsDrawer } from './CommentsDrawer';
+export { default as CommentDrawerActivity } from './CommentDrawerActivity';
+export { default as CommentInput } from './CommentInput';
