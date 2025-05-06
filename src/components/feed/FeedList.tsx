@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/sonner";
 import FeedItem from "./FeedItem";
 import CommentsList from "./CommentsList";
 import ImageViewer from "./ImageViewer";
-import { FeedItem as FeedItemType } from "./types";
+import { FeedItem as FeedItemType, Comment } from "./types";
 import { useFeedData } from "@/hooks/useFeedData";
 
 const FeedList = () => {
@@ -68,15 +68,23 @@ const FeedList = () => {
     if (!currentUser || !selectedItem) return;
     
     try {
-      // Optimistically update local state first
-      addCommentToItem(selectedItem.id, {
-        id: `temp-${Date.now()}`,
+      // Generate a temporary ID for optimistic UI update
+      const tempId = `temp-${Date.now()}`;
+      
+      // Create new comment object
+      const newComment: Comment = {
+        id: tempId,
         user_id: currentUser,
         content: content,
         created_at: new Date().toISOString(),
         user_name: 'Du', // Temporary name until DB update comes through
-        profile_image_url: null
-      });
+        profile_image_url: null,
+        likes: 0,
+        userLiked: false
+      };
+      
+      // Optimistically update local state first
+      addCommentToItem(selectedItem.id, newComment);
       
       // Then add to database
       await supabase

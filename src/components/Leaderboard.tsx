@@ -11,11 +11,14 @@ const Leaderboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const rewards = {
-    1: "1500 kr presentkort",
-    2: "Besök en helt ny stad",
-    3: "Spring 3 km under 25 min",
-    4: "Spring 6 km under 50 min"
+  const getRewardText = (position: number) => {
+    switch (position) {
+      case 1: return "1500 kr presentkort";
+      case 2: return "Kämpa du är nästan där";
+      case 3: return "3km lopp under 25 min";
+      case 4: return "6km lopp under 50 min";
+      default: return "";
+    }
   };
 
   useEffect(() => {
@@ -75,7 +78,7 @@ const Leaderboard = () => {
                 </div>
                 <div className="text-right">
                   <div className="font-bold">{user.totalPoints}p</div>
-                  <div className="text-xs text-gray-500">{rewards[index + 1] || ""}</div>
+                  <div className="text-xs text-gray-500">{getRewardText(index + 1)}</div>
                 </div>
               </div>
             ))}

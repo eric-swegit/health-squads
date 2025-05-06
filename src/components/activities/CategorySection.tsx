@@ -43,7 +43,7 @@ const CategorySection = ({
       </div>
       
       {expanded && (
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-3 md:grid-cols-4 lg:grid-cols-5'} gap-2`}>
           {activities.map((activity) => (
             <ActivityCard
               key={activity.id}

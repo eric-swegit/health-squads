@@ -1,8 +1,7 @@
 
 import { 
   Dialog, 
-  DialogContent, 
-  DialogTitle,
+  DialogContent,
   DialogHeader,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, X } from "lucide-react";
 import { useState } from "react";
 import CommentItem from "./CommentItem";
-import { FeedItem } from "./types";
+import { FeedItem, Comment } from "./types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 
 interface CommentsListProps {
   open: boolean;
@@ -23,8 +24,20 @@ interface CommentsListProps {
 
 const CommentsList = ({ open, onOpenChange, selectedItem, onAddComment }: CommentsListProps) => {
   const [newComment, setNewComment] = useState("");
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setCurrentUser(data.session.user.id);
+      }
+    };
+    
+    getCurrentUser();
+  }, []);
 
   // Auto-focus the comment input when the dialog opens
   useEffect(() => {
@@ -56,12 +69,55 @@ const CommentsList = ({ open, onOpenChange, selectedItem, onAddComment }: Commen
     }
   };
 
+  const handleLikeComment = async (comment: Comment) => {
+    if (!currentUser || !selectedItem) return;
+    
+    try {
+      // Optimistically update UI
+      const updatedComments = selectedItem.comments.map(c => {
+        if (c.id === comment.id) {
+          return {
+            ...c,
+            likes: comment.userLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
+            userLiked: !comment.userLiked
+          };
+        }
+        return c;
+      });
+      
+      // Update the selected item with updated comments
+      const updatedItem = { ...selectedItem, comments: updatedComments };
+      setSelectedItem(updatedItem);
+      
+      // API call to update like
+      if (comment.userLiked) {
+        // Unlike
+        await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', comment.id)
+          .eq('user_id', currentUser);
+      } else {
+        // Like
+        await supabase
+          .from('comment_likes')
+          .insert({
+            comment_id: comment.id,
+            user_id: currentUser
+          });
+      }
+    } catch (error: any) {
+      console.error("Error liking comment:", error);
+      toast.error(`Kunde inte uppdatera gillning: ${error.message}`);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 overflow-hidden max-h-[90vh] flex flex-col">
         <DialogHeader className="px-4 py-2 border-b">
           <div className="flex items-center justify-between">
-            <DialogTitle>Kommentarer</DialogTitle>
+            <h2 className="font-semibold">Kommentarer</h2>
             <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
               <X className="h-4 w-4" />
             </Button>
@@ -98,7 +154,11 @@ const CommentsList = ({ open, onOpenChange, selectedItem, onAddComment }: Commen
             <p className="text-center text-gray-500 py-8">Inga kommentarer än. Bli först med att kommentera!</p>
           ) : (
             selectedItem.comments.map((comment) => (
-              <CommentItem key={comment.id} comment={comment} />
+              <CommentItem 
+                key={comment.id} 
+                comment={comment} 
+                onLike={() => handleLikeComment(comment)}
+              />
             ))
           )}
         </div>

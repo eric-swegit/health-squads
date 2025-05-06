@@ -53,7 +53,7 @@ export const useFeedData = (currentUser: string | null) => {
               
             if (commentsError) throw commentsError;
             
-            // For each comment, fetch the user profile separately
+            // For each comment, fetch the user profile and likes
             const formattedComments = await Promise.all((commentsData || []).map(async (comment) => {
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
@@ -61,13 +61,31 @@ export const useFeedData = (currentUser: string | null) => {
                 .eq('id', comment.user_id)
                 .single();
                 
+              // Get comment likes count
+              const { count: commentLikesCount, error: commentLikesError } = await supabase
+                .from('comment_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('comment_id', comment.id);
+                
+              // Check if current user liked this comment
+              const { data: userCommentLikeData, error: userCommentLikeError } = await supabase
+                .from('comment_likes')
+                .select('id')
+                .eq('comment_id', comment.id)
+                .eq('user_id', currentUser)
+                .single();
+                
+              const userLikedComment = !userCommentLikeError && userCommentLikeData;
+              
               return {
                 id: comment.id,
                 user_id: comment.user_id,
                 content: comment.content,
                 created_at: comment.created_at,
                 user_name: profileData?.name || 'Användare',
-                profile_image_url: profileData?.profile_image_url || null
+                profile_image_url: profileData?.profile_image_url || null,
+                likes: commentLikesCount || 0,
+                userLiked: !!userLikedComment
               };
             }));
             
@@ -103,12 +121,21 @@ export const useFeedData = (currentUser: string | null) => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'likes' },
         () => {
+          // Instead of reloading everything, we could update the specific item
           fetchFeedItems();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'comments' },
         () => {
+          // Instead of reloading everything, we could update the specific item
+          fetchFeedItems();
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'comment_likes' },
+        () => {
+          // Instead of reloading everything, we could update the specific item
           fetchFeedItems();
         }
       )

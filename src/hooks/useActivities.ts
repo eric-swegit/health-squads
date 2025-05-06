@@ -177,7 +177,13 @@ export const useActivities = () => {
   };
 
   const undoClaimActivity = async (activityId: string) => {
-    if (!user) return false;
+    console.log("Undoing claim for activity:", activityId);
+    console.log("Current claimedIds:", claimedIds);
+    
+    if (!user) {
+      toast.error("Du måste vara inloggad för att ångra aktiviteter");
+      return false;
+    }
     
     const claimedId = claimedIds[activityId];
     if (!claimedId) {
@@ -186,13 +192,20 @@ export const useActivities = () => {
     }
 
     try {
+      console.log("Deleting claimed activity with id:", claimedId);
+      
       const { error } = await supabase
         .from('claimed_activities')
         .delete()
         .eq('id', claimedId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
 
+      console.log("Successfully deleted claimed activity");
+      
       // Update local state
       setClaimedToday(claimedToday.filter(id => id !== activityId));
       
@@ -207,6 +220,7 @@ export const useActivities = () => {
       toast.success("Aktiviteten har ångrats");
       return true;
     } catch (error: any) {
+      console.error("Full error when undoing claim:", error);
       toast.error(`Kunde inte ångra aktivitet: ${error.message}`);
       return false;
     }
