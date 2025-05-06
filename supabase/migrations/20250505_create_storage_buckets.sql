@@ -1,4 +1,5 @@
 
+
 -- Create a storage bucket for profile images
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('profile-images', 'Profile Images', true);
@@ -31,3 +32,4 @@ CREATE POLICY "User Delete Policy"
     bucket_id = 'profile-images' AND
     auth.uid() = owner
   );
+

@@ -1,4 +1,5 @@
 
+
 [functions]
 
 [realtime]
@@ -15,3 +16,4 @@ enabled = true
 
 [realtime.tables.comments]
 enabled = true
+
