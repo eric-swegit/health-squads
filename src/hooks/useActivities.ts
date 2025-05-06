@@ -1,7 +1,23 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Activity, ClaimedActivity } from '@/types';
 import { toast } from "@/components/ui/sonner";
 import { supabase } from '@/integrations/supabase/client';
+
+// Helper function to convert snake_case DB records to camelCase Activity objects
+const mapDbActivityToActivity = (dbActivity: any): Activity => {
+  return {
+    id: dbActivity.id,
+    name: dbActivity.name,
+    points: dbActivity.points,
+    requiresPhoto: dbActivity.requires_photo,
+    type: dbActivity.type,
+    userId: dbActivity.user_id,
+    category: dbActivity.category,
+    duration: dbActivity.duration,
+    amount: dbActivity.amount
+  };
+};
 
 export const useActivities = () => {
   const [commonActivities, setCommonActivities] = useState<Activity[]>([]);
@@ -32,7 +48,7 @@ export const useActivities = () => {
           .eq('type', 'common');
 
         if (commonError) throw commonError;
-        setCommonActivities(common || []);
+        setCommonActivities(common ? common.map(mapDbActivityToActivity) : []);
 
         // Fetch personal activities if user is available
         if (user) {
@@ -43,7 +59,7 @@ export const useActivities = () => {
             .eq('user_id', user.id);
 
           if (personalError) throw personalError;
-          setPersonalActivities(personal || []);
+          setPersonalActivities(personal ? personal.map(mapDbActivityToActivity) : []);
         } else {
           setPersonalActivities([]);
         }
