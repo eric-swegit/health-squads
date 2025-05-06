@@ -1,5 +1,5 @@
 
-import { Notification, useNotifications } from '@/hooks/useNotifications';
+import { Notification } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -8,10 +8,10 @@ interface NotificationListProps {
   notifications: Notification[];
   loading: boolean;
   setOpen: (open: boolean) => void;
+  markAsRead: (notificationId: string) => Promise<void>;
 }
 
-const NotificationList = ({ notifications, loading, setOpen }: NotificationListProps) => {
-  const { markAsRead } = useNotifications();
+const NotificationList = ({ notifications, loading, setOpen, markAsRead }: NotificationListProps) => {
   const navigate = useNavigate();
 
   if (loading) {

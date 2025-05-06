@@ -90,7 +90,7 @@ const NavBar = () => {
               aria-label={item.label}
             >
               <Icon 
-                className={`h-6 w-6 ${active ? "text-purple-600" : "text-gray-500"}`} 
+                className={`h-7 w-7 ${active ? "text-purple-600" : "text-gray-500"}`} 
                 aria-hidden="true"
               />
               
