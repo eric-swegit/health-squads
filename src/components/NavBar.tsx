@@ -1,67 +1,13 @@
 
 import { Home, Trophy, Activity as ActivityIcon, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import NotificationBell from "./notifications/NotificationBell";
+import { useFeedIndicator } from "@/hooks/useFeedIndicator";
 
 const NavBar = () => {
   const location = useLocation();
   const path = location.pathname;
-  const [newPosts, setNewPosts] = useState(false);
-  const [lastViewedFeed, setLastViewedFeed] = useState<Date | null>(null);
-
-  useEffect(() => {
-    // Load last viewed time from localStorage
-    const storedDate = localStorage.getItem('lastViewedFeed');
-    if (storedDate) {
-      setLastViewedFeed(new Date(storedDate));
-    }
-
-    // Check for new feed items
-    const checkNewFeedItems = async () => {
-      if (!lastViewedFeed) return;
-
-      const { data, error } = await supabase
-        .from('feed_activities')
-        .select('created_at')
-        .gt('created_at', lastViewedFeed.toISOString())
-        .limit(1);
-
-      if (!error && data && data.length > 0) {
-        setNewPosts(true);
-      }
-    };
-
-    checkNewFeedItems();
-
-    // Subscribe to feed changes
-    const feedChannel = supabase
-      .channel('feed_updates')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'claimed_activities' }, 
-        () => {
-          if (path !== '/') {
-            setNewPosts(true);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(feedChannel);
-    };
-  }, [lastViewedFeed, path]);
-
-  // Update last viewed time when visiting feed
-  useEffect(() => {
-    if (path === '/') {
-      const now = new Date();
-      localStorage.setItem('lastViewedFeed', now.toISOString());
-      setLastViewedFeed(now);
-      setNewPosts(false);
-    }
-  }, [path]);
+  const { hasNewPosts } = useFeedIndicator();
 
   const isActivePath = (route: string) => {
     return path === route;
@@ -80,7 +26,7 @@ const NavBar = () => {
         {menuItems.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(item.path);
-          const showNewIndicator = item.path === '/' && newPosts;
+          const showNewIndicator = item.path === '/' && hasNewPosts;
           
           return (
             <Link
@@ -90,7 +36,7 @@ const NavBar = () => {
               aria-label={item.label}
             >
               <Icon 
-                className={`h-6 w-6 ${active ? "text-purple-600" : "text-gray-500"}`} 
+                className={`h-7 w-7 ${active ? "text-purple-600" : "text-gray-500"}`} 
                 aria-hidden="true"
               />
               

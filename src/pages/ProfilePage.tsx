@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -47,134 +46,167 @@ const ProfilePage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const profileChannel = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
+  // Get user ID once
   useEffect(() => {
-    const getProfile = async () => {
-      try {
-        setLoading(true);
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileError) throw profileError;
-        
-        setProfile(profileData);
-        
-        // Get activity stats
-        const { data: activitiesData, error: activitiesError } = await supabase
-          .from('claimed_activities')
-          .select('date')
-          .eq('user_id', session.user.id)
-          .order('date', { ascending: false });
-          
-        if (activitiesError) throw activitiesError;
-        
-        if (activitiesData) {
-          // Calculate total activities
-          const totalActivities = activitiesData.length;
-          
-          // Calculate activities this week
-          const oneWeekAgo = new Date();
-          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-          const activitiesThisWeek = activitiesData.filter(
-            activity => new Date(activity.date) >= oneWeekAgo
-          ).length;
-          
-          // Calculate streak
-          let streak = 0;
-          const today = new Date().toISOString().split('T')[0];
-          const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
-          
-          // Check if there's an activity today
-          const hasActivityToday = activitiesData.some(activity => activity.date === today);
-          
-          // Check if there's an activity yesterday
-          const hasActivityYesterday = activitiesData.some(activity => activity.date === yesterday);
-          
-          if (hasActivityToday) {
-            streak = 1;
-            
-            // Check for consecutive days before today
-            let checkDate = yesterday;
-            let consecutiveDays = true;
-            
-            while (consecutiveDays) {
-              const hasActivity = activitiesData.some(activity => activity.date === checkDate);
-              if (hasActivity) {
-                streak++;
-                // Move to the previous day
-                const nextDate = new Date(checkDate);
-                nextDate.setDate(nextDate.getDate() - 1);
-                checkDate = nextDate.toISOString().split('T')[0];
-              } else {
-                consecutiveDays = false;
-              }
-            }
-          } else if (hasActivityYesterday) {
-            streak = 1;
-            
-            // Check for consecutive days before yesterday
-            let checkDate = new Date(yesterday);
-            checkDate.setDate(checkDate.getDate() - 1);
-            let dateStr = checkDate.toISOString().split('T')[0];
-            let consecutiveDays = true;
-            
-            while (consecutiveDays) {
-              const hasActivity = activitiesData.some(activity => activity.date === dateStr);
-              if (hasActivity) {
-                streak++;
-                // Move to the previous day
-                checkDate.setDate(checkDate.getDate() - 1);
-                dateStr = checkDate.toISOString().split('T')[0];
-              } else {
-                consecutiveDays = false;
-              }
-            }
-          }
-          
-          setStats({
-            totalActivities,
-            activitiesThisWeek,
-            streak
-          });
-        }
-      } catch (error: any) {
-        console.error("Error fetching profile:", error);
-        toast.error(`Kunde inte hämta profil: ${error.message}`);
-      } finally {
-        setLoading(false);
+    const getUserId = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
       }
     };
-
-    getProfile();
+    getUserId();
+  }, []);
+  
+  // Fetch profile and stats data
+  const fetchProfileData = useCallback(async () => {
+    if (!userId) return;
     
-    // Subscribe to profile changes
-    const profileChannel = supabase
-      .channel('profile_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'profiles' }, 
-        () => {
-          getProfile();
+    try {
+      setLoading(true);
+      
+      // Fetch profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError) throw profileError;
+      setProfile(profileData);
+      
+      // Fetch claimed activities for stats
+      const { data: activitiesData, error: activitiesError } = await supabase
+        .from('claimed_activities')
+        .select('date')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+        
+      if (activitiesError) throw activitiesError;
+      
+      if (activitiesData) {
+        // Calculate stats from activities data
+        const totalActivities = activitiesData.length;
+        
+        // Calculate activities this week
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const activitiesThisWeek = activitiesData.filter(
+          activity => new Date(activity.date) >= oneWeekAgo
+        ).length;
+        
+        // Calculate streak
+        let streak = 0;
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
+        
+        // Check for activity today
+        const hasActivityToday = activitiesData.some(activity => activity.date === today);
+        
+        // Check for activity yesterday
+        const hasActivityYesterday = activitiesData.some(activity => activity.date === yesterday);
+        
+        if (hasActivityToday) {
+          streak = 1;
+          
+          // Check for consecutive days before today
+          let checkDate = yesterday;
+          let consecutiveDays = true;
+          
+          while (consecutiveDays) {
+            const hasActivity = activitiesData.some(activity => activity.date === checkDate);
+            if (hasActivity) {
+              streak++;
+              // Move to the previous day
+              const nextDate = new Date(checkDate);
+              nextDate.setDate(nextDate.getDate() - 1);
+              checkDate = nextDate.toISOString().split('T')[0];
+            } else {
+              consecutiveDays = false;
+            }
+          }
+        } else if (hasActivityYesterday) {
+          streak = 1;
+          
+          // Check for consecutive days before yesterday
+          let checkDate = new Date(yesterday);
+          checkDate.setDate(checkDate.getDate() - 1);
+          let dateStr = checkDate.toISOString().split('T')[0];
+          let consecutiveDays = true;
+          
+          while (consecutiveDays) {
+            const hasActivity = activitiesData.some(activity => activity.date === dateStr);
+            if (hasActivity) {
+              streak++;
+              // Move to the previous day
+              checkDate.setDate(checkDate.getDate() - 1);
+              dateStr = checkDate.toISOString().split('T')[0];
+            } else {
+              consecutiveDays = false;
+            }
+          }
         }
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'claimed_activities' },
-        () => {
-          getProfile();
-        }
-      )
-      .subscribe();
+        
+        setStats({
+          totalActivities,
+          activitiesThisWeek,
+          streak
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching profile:", error);
+      toast.error(`Kunde inte hämta profil: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  // Setup subscription to profile and claimed activities
+  useEffect(() => {
+    if (!userId) return;
+    
+    // Initial fetch
+    fetchProfileData();
+    
+    // Setup subscription only once per userId
+    if (!profileChannel.current) {
+      profileChannel.current = supabase
+        .channel('profile_changes_' + userId)
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'profiles',
+            filter: `id=eq.${userId}`
+          }, 
+          () => {
+            fetchProfileData();
+          }
+        )
+        .on('postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'claimed_activities',
+            filter: `user_id=eq.${userId}`
+          },
+          () => {
+            fetchProfileData();
+          }
+        )
+        .subscribe();
+    }
     
     return () => {
-      supabase.removeChannel(profileChannel);
+      // Clean up subscription when component unmounts or userId changes
+      if (profileChannel.current) {
+        supabase.removeChannel(profileChannel.current);
+        profileChannel.current = null;
+      }
     };
-  }, []);
+  }, [userId, fetchProfileData]);
 
   const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -206,11 +238,8 @@ const ProfilePage = () => {
         
       if (updateError) throw updateError;
       
-      // Update local state
-      setProfile({
-        ...profile,
-        profile_image_url: urlData.publicUrl
-      });
+      // Update local state - this will get refreshed by the subscription
+      // No need to update state here
       
       toast.success("Profilbild uppdaterad!");
     } catch (error: any) {
