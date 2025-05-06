@@ -63,7 +63,7 @@ const Dashboard = () => {
   // Calculate days left in challenge
   useEffect(() => {
     const calculateDaysLeft = () => {
-      const challengeEndDate = new Date('2025-05-31T23:59:59');
+      const challengeEndDate = new Date('2025-06-15T23:59:59'); // Updated to June 15th
       const today = new Date();
       const diffTime = challengeEndDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

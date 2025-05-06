@@ -26,6 +26,8 @@ interface CommentsDrawerProps {
 const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: CommentsDrawerProps) => {
   const [newComment, setNewComment] = useState("");
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>("");
+  const [currentUserImage, setCurrentUserImage] = useState<string | null>(null);
   const [localComments, setLocalComments] = useState<Comment[]>([]);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +37,18 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         setCurrentUser(data.session.user.id);
+        
+        // Fetch the user's profile data
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('name, profile_image_url')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        if (!error && profileData) {
+          setCurrentUserName(profileData.name);
+          setCurrentUserImage(profileData.profile_image_url);
+        }
       }
     };
     
@@ -72,8 +86,8 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
         user_id: currentUser || '',
         content: newComment,
         created_at: new Date().toISOString(),
-        user_name: 'Du',
-        profile_image_url: null,
+        user_name: currentUserName || 'Du', // Use actual username instead of "Du"
+        profile_image_url: currentUserImage,
         likes: 0,
         userLiked: false
       };

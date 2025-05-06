@@ -92,6 +92,10 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       setClaimedToday(prev => prev.filter(id => id !== activityId));
       
       toast.success("Aktivitet borttagen");
+      
+      // Force a delay before returning to ensure the database transaction completes
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       return true;
     } catch (error: any) {
       console.error("Error removing claimed activity:", error);
