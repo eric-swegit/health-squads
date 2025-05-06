@@ -86,6 +86,14 @@ const FeedList = () => {
       // Optimistically update local state first
       addCommentToItem(selectedItem.id, newComment);
       
+      // Also update the currently selected item if in drawer
+      if (selectedItem) {
+        setSelectedItem({
+          ...selectedItem,
+          comments: [...selectedItem.comments, newComment]
+        });
+      }
+      
       // Then add to database
       await supabase
         .from('comments')

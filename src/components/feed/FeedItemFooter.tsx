@@ -8,10 +8,9 @@ interface FeedItemFooterProps {
   item: FeedItem;
   onLike: (item: FeedItem) => void;
   onOpenComments: (item: FeedItem) => void;
-  onComment: () => void;
 }
 
-const FeedItemFooter = ({ item, onLike, onOpenComments, onComment }: FeedItemFooterProps) => {
+const FeedItemFooter = ({ item, onLike, onOpenComments }: FeedItemFooterProps) => {
   return (
     <CardFooter className="p-4 pt-0 flex justify-between">
       <div className="flex items-center gap-1">

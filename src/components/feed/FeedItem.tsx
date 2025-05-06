@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import FeedItemHeader from "./FeedItemHeader";
 import FeedItemContent from "./FeedItemContent";
 import FeedItemFooter from "./FeedItemFooter";
-import FeedItemComment from "./FeedItemComment";
 import { FeedItem as FeedItemType } from "./types";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +17,6 @@ interface FeedItemProps {
 
 const FeedItem = ({ item, onLike, onOpenComments, onOpenImage, onAddComment }: FeedItemProps) => {
   const [currentUserProfile, setCurrentUserProfile] = useState<{ image: string | null; name: string } | null>(null);
-  const [showCommentField, setShowCommentField] = useState(false);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -50,15 +48,7 @@ const FeedItem = ({ item, onLike, onOpenComments, onOpenImage, onAddComment }: F
         item={item} 
         onLike={onLike} 
         onOpenComments={onOpenComments}
-        onComment={() => setShowCommentField(true)}
       />
-      {showCommentField && (
-        <FeedItemComment 
-          item={item} 
-          profile={currentUserProfile}
-          onAddComment={onAddComment}
-        />
-      )}
     </Card>
   );
 };

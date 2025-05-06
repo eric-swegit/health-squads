@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { 
   Drawer, 
   DrawerContent, 
@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
-import { useState } from "react";
 import CommentItem from "./CommentItem";
 import { FeedItem, Comment } from "./types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +26,7 @@ interface CommentsDrawerProps {
 const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: CommentsDrawerProps) => {
   const [newComment, setNewComment] = useState("");
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [localComments, setLocalComments] = useState<Comment[]>([]);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +40,13 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
     
     getCurrentUser();
   }, []);
+
+  // Initialize local comments when the selected item changes
+  useEffect(() => {
+    if (selectedItem) {
+      setLocalComments(selectedItem.comments);
+    }
+  }, [selectedItem]);
 
   // Auto-focus the comment input when the drawer opens
   useEffect(() => {
@@ -55,11 +62,29 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
     if (commentsContainerRef.current) {
       commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight;
     }
-  }, [selectedItem?.comments.length]);
+  }, [localComments.length]);
 
   const handleAddComment = () => {
-    if (newComment.trim()) {
+    if (newComment.trim() && selectedItem) {
+      // Create temporary comment for immediate display
+      const tempComment: Comment = {
+        id: `temp-${Date.now()}`,
+        user_id: currentUser || '',
+        content: newComment,
+        created_at: new Date().toISOString(),
+        user_name: 'Du',
+        profile_image_url: null,
+        likes: 0,
+        userLiked: false
+      };
+      
+      // Update local state immediately
+      setLocalComments(prevComments => [...prevComments, tempComment]);
+      
+      // Call the parent handler to actually post the comment
       onAddComment(newComment);
+      
+      // Clear the input
       setNewComment("");
     }
   };
@@ -75,19 +100,21 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
     if (!currentUser || !selectedItem) return;
     
     try {
-      // Optimistically update UI
-      const updatedComments = selectedItem.comments.map(c => {
-        if (c.id === comment.id) {
-          return {
-            ...c,
-            likes: comment.userLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
-            userLiked: !comment.userLiked
-          };
-        }
-        return c;
-      });
+      // Update local state immediately for responsiveness
+      setLocalComments(prevComments => 
+        prevComments.map(c => {
+          if (c.id === comment.id) {
+            return {
+              ...c,
+              likes: comment.userLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
+              userLiked: !comment.userLiked
+            };
+          }
+          return c;
+        })
+      );
       
-      // API call to update like
+      // Make the API call
       if (comment.userLiked) {
         // Unlike
         await supabase
@@ -107,6 +134,9 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
     } catch (error: any) {
       console.error("Error liking comment:", error);
       toast.error(`Kunde inte uppdatera gillning: ${error.message}`);
+      
+      // Revert local state if the API call fails
+      setLocalComments(selectedItem.comments);
     }
   };
 
@@ -138,15 +168,15 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
           </div>
         )}
         
-        {/* Comments List */}
+        {/* Comments List - Using localComments instead of selectedItem.comments */}
         <div 
           ref={commentsContainerRef}
           className="flex-1 overflow-y-auto p-4 space-y-4"
         >
-          {!selectedItem || selectedItem.comments.length === 0 ? (
+          {!selectedItem || localComments.length === 0 ? (
             <p className="text-center text-gray-500 py-8">Inga kommentarer än. Bli först med att kommentera!</p>
           ) : (
-            selectedItem.comments.map((comment) => (
+            localComments.map((comment) => (
               <CommentItem 
                 key={comment.id} 
                 comment={comment} 
