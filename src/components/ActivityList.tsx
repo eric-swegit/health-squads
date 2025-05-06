@@ -1,15 +1,15 @@
 
 import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Activity } from '@/types';
 import { toast } from "@/components/ui/sonner";
 import { useActivities } from '@/hooks/useActivities';
 import { supabase } from '@/integrations/supabase/client';
-import CategorySection from './activities/CategorySection';
 import ActivityInfoDialog from './activities/ActivityInfoDialog';
 import ActivityConfirmDialog from './activities/ActivityConfirmDialog';
-import { activityInfo, groupActivitiesByCategory, getCategoryTitle } from './activities/utils';
+import ActivityFilters from './activities/ActivityFilters';
+import ActivityCategories from './activities/ActivityCategories';
+import { activityInfo } from './activities/utils';
 
 const ActivityList = () => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -99,55 +99,26 @@ const ActivityList = () => {
     return activeSection === 'common' ? commonActivities : personalActivities;
   };
 
-  const groupedActivities = groupActivitiesByCategory(getActivitiesBySection());
-
   return (
     <div className="space-y-4">
       <Card className="p-4">
-        <div className="flex gap-2 mb-4">
-          <Button 
-            variant={activeSection === 'common' ? "default" : "outline"}
-            onClick={() => setActiveSection('common')}
-            className="flex-1"
-          >
-            Gemensamma
-          </Button>
-          <Button 
-            variant={activeSection === 'personal' ? "default" : "outline"}
-            onClick={() => setActiveSection('personal')}
-            className="flex-1"
-          >
-            Personliga
-          </Button>
-        </div>
+        <ActivityFilters 
+          activeSection={activeSection} 
+          setActiveSection={setActiveSection} 
+        />
 
         <CardContent className="p-0">
-          {Object.entries(groupedActivities).map(([category, activities]) => (
-            <CategorySection
-              key={category}
-              title={getCategoryTitle(category)}
-              activities={activities}
-              claimedToday={claimedToday}
-              onClaim={handleClaim}
-              onInfo={(activity) => {
-                setSelectedActivity(activity);
-                setInfoOpen(true);
-              }}
-              onUndo={handleUndoClaim}
-            />
-          ))}
-          
-          {activeSection === 'personal' && personalActivities.length === 0 && (
-            <div className="text-center p-8 text-gray-500">
-              Du har inga personliga aktiviteter än. Kontakta en administratör för att lägga till personliga mål.
-            </div>
-          )}
-
-          {Object.values(groupedActivities).every(arr => arr.length === 0) && (
-            <div className="text-center p-8 text-gray-500">
-              Inga aktiviteter hittades i denna kategori.
-            </div>
-          )}
+          <ActivityCategories
+            activities={getActivitiesBySection()}
+            activeSection={activeSection}
+            claimedToday={claimedToday}
+            onClaim={handleClaim}
+            onInfo={(activity) => {
+              setSelectedActivity(activity);
+              setInfoOpen(true);
+            }}
+            onUndo={handleUndoClaim}
+          />
         </CardContent>
       </Card>
 
