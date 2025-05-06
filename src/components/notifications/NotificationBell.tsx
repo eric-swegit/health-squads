@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { BellRing } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/useNotifications';
 import NotificationList from './NotificationList';
@@ -24,7 +24,7 @@ const NotificationBell = () => {
           className="h-7 w-7 rounded-full hover:bg-gray-100 focus:outline-none flex items-center justify-center p-0"
           aria-label="Notifikationer"
         >
-          <BellRing className="h-7 w-7 text-gray-500" />
+          <Bell className="h-7 w-7 text-gray-500" />
           {unreadCount > 0 && (
             <span className="absolute top-0 right-0 flex h-2 w-2 rounded-full bg-red-500">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
