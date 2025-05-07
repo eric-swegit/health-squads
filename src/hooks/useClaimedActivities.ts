@@ -91,11 +91,18 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       
       console.log(`Attempting to delete activity: ${activityId} for user: ${user.id}`);
       
-      // Remove the date condition from the match to prevent timezone issues
+      // Get today's date in YYYY-MM-DD format for the match criteria
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Include the date in the match criteria to only delete today's entry
       const { error, count } = await supabase
         .from('claimed_activities')
         .delete({ count: 'exact' })
-        .match({ user_id: user.id, activity_id: activityId });
+        .match({ 
+          user_id: user.id, 
+          activity_id: activityId,
+          date: today // Added this to only delete the current day's entry
+        });
 
       if (error) throw error;
       
