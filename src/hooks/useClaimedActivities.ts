@@ -114,93 +114,162 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     }
   };
   
-  // New function to handle progressive activities
+  // Updated function to handle progressive activities
   const handleProgressiveActivity = async (activity: Activity, photoUrl?: string) => {
     if (!user || !activity.progressive || !activity.progress_steps) {
       return false;
     }
     
-    const activityProgress = progressiveActivities[activity.id];
-    const currentProgress = activityProgress?.currentProgress || 0;
-    const maxProgress = activity.progress_steps;
+    const today = new Date().toISOString();
     
     try {
-      const today = new Date().toISOString();
+      // Get current progress for this activity, if it exists
+      const activityProgress = progressiveActivities[activity.id];
       
-      if (currentProgress < maxProgress) {
-        // Activity is still in progress
-        const newProgress = currentProgress + 1;
-        const photoUrls = [...(activityProgress?.photoUrls || [])];
+      // If this is the first step or activity doesn't exist in progress tracking yet
+      if (!activityProgress) {
+        console.log(`Starting new progressive activity: ${activity.name} (Step 1/${activity.progress_steps})`);
         
-        if (photoUrl) {
-          photoUrls.push(photoUrl);
-        }
+        // Initialize new progress tracking for first step
+        const photoUrls = photoUrl ? [photoUrl] : [];
+        const progressTimestamps = [today]; // Add timestamp for first step
         
-        if (newProgress < maxProgress) {
-          // Update progress tracking
-          const { error } = await supabase
-            .from('progress_tracking')
-            .upsert({
-              user_id: user.id,
-              activity_id: activity.id,
-              current_progress: newProgress,
-              max_progress: maxProgress,
-              photo_urls: photoUrls,
-              progress_timestamps: [...(activityProgress?.photoUrls || []).map(() => ''), today],
-              last_updated_at: today
-            });
-            
-          if (error) throw error;
-          
-          // Optimistically update the local state
-          setProgressiveActivities(prev => ({
-            ...prev,
-            [activity.id]: {
-              currentProgress: newProgress,
-              maxProgress: maxProgress,
-              photoUrls: photoUrls
-            }
-          }));
-          
-          toast.success(`Steg ${newProgress}/${maxProgress} klart för "${activity.name}"!`);
-          return true;
-        } else {
-          // Final step reached - mark activity as completed
-          const { error: claimError } = await supabase
-            .from('claimed_activities')
-            .insert({
-              user_id: user.id,
-              activity_id: activity.id,
-              photo_url: photoUrls[0] || null, // Set first photo as main photo
-              photo_urls: photoUrls // Store all photos
-            });
-            
-          if (claimError) throw claimError;
-          
-          // Delete the progress tracking record
-          const { error: deleteError } = await supabase
-            .from('progress_tracking')
-            .delete()
-            .match({ user_id: user.id, activity_id: activity.id });
-            
-          if (deleteError) throw deleteError;
-          
-          // Optimistically update the local state
-          setClaimedToday(prev => [...prev, activity.id]);
-          setProgressiveActivities(prev => {
-            const updated = { ...prev };
-            delete updated[activity.id];
-            return updated;
+        const { error } = await supabase
+          .from('progress_tracking')
+          .insert({
+            user_id: user.id,
+            activity_id: activity.id,
+            current_progress: 1, // Start at 1 for first step
+            max_progress: activity.progress_steps,
+            photo_urls: photoUrls,
+            progress_timestamps: progressTimestamps,
+            created_at: today,
+            last_updated_at: today
           });
-          
-          toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
-          return true;
-        }
+        
+        if (error) throw error;
+        
+        // Update local state
+        setProgressiveActivities(prev => ({
+          ...prev,
+          [activity.id]: {
+            currentProgress: 1,
+            maxProgress: activity.progress_steps,
+            photoUrls: photoUrls
+          }
+        }));
+        
+        toast.success(`Steg 1/${activity.progress_steps} klart för "${activity.name}"!`);
+        return true;
       }
       
-      return false;
+      // For subsequent steps
+      const currentProgress = activityProgress.currentProgress;
+      const maxProgress = activityProgress.maxProgress;
+      
+      // Make sure we haven't already completed all steps
+      if (currentProgress >= maxProgress) {
+        toast.info(`Du har redan klarat alla steg för "${activity.name}"`);
+        return false;
+      }
+      
+      // Prepare for the next step
+      const newProgress = currentProgress + 1;
+      const photoUrls = [...activityProgress.photoUrls];
+      
+      if (photoUrl) {
+        photoUrls.push(photoUrl);
+      }
+      
+      // Update progress timestamps, maintaining existing ones
+      let progressTimestamps = [];
+      
+      // Get existing timestamps from the database directly to ensure accuracy
+      const { data: progressData, error: fetchError } = await supabase
+        .from('progress_tracking')
+        .select('progress_timestamps')
+        .eq('user_id', user.id)
+        .eq('activity_id', activity.id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      if (progressData && progressData.progress_timestamps) {
+        progressTimestamps = [...progressData.progress_timestamps];
+      }
+      
+      // Add new timestamp for current step
+      progressTimestamps.push(today);
+      
+      console.log(`Updating progressive activity: ${activity.name} (Step ${newProgress}/${maxProgress})`);
+      console.log('Photo URLs:', photoUrls);
+      console.log('Progress timestamps:', progressTimestamps);
+      
+      if (newProgress < maxProgress) {
+        // Activity still in progress - update progress
+        const { error } = await supabase
+          .from('progress_tracking')
+          .update({
+            current_progress: newProgress,
+            photo_urls: photoUrls,
+            progress_timestamps: progressTimestamps,
+            last_updated_at: today
+          })
+          .eq('user_id', user.id)
+          .eq('activity_id', activity.id);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setProgressiveActivities(prev => ({
+          ...prev,
+          [activity.id]: {
+            currentProgress: newProgress,
+            maxProgress: maxProgress,
+            photoUrls: photoUrls
+          }
+        }));
+        
+        toast.success(`Steg ${newProgress}/${maxProgress} klart för "${activity.name}"!`);
+        return true;
+      } else {
+        // Final step reached - complete the activity
+        console.log(`Completing progressive activity: ${activity.name}`);
+        
+        // First mark activity as completed
+        const { error: claimError } = await supabase
+          .from('claimed_activities')
+          .insert({
+            user_id: user.id,
+            activity_id: activity.id,
+            photo_url: photoUrls[0] || null, // Set first photo as main photo
+            photo_urls: photoUrls // Store all photos
+          });
+        
+        if (claimError) throw claimError;
+        
+        // Then delete progress tracking record
+        const { error: deleteError } = await supabase
+          .from('progress_tracking')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('activity_id', activity.id);
+        
+        if (deleteError) throw deleteError;
+        
+        // Update local state
+        setClaimedToday(prev => [...prev, activity.id]);
+        setProgressiveActivities(prev => {
+          const updated = { ...prev };
+          delete updated[activity.id];
+          return updated;
+        });
+        
+        toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
+        return true;
+      }
     } catch (error: any) {
-      console.error("Error updating progressive activity:", error);
+      console.error("Error handling progressive activity:", error);
       toast.error(`Kunde inte uppdatera aktiviteten: ${error.message}`);
       return false;
     }
