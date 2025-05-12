@@ -18,6 +18,7 @@ export interface FeedItem {
   activity_id: string;
   activity_name: string;
   photo_url: string | null;
+  photo_urls: string[] | null;
   date: string;
   created_at: string;
   points: number;
