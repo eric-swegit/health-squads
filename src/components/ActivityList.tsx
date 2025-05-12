@@ -1,22 +1,17 @@
 
 import { useState } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
 import { Activity } from '@/types';
-import { toast } from "@/components/ui/sonner";
 import { useActivities } from '@/hooks/useActivities';
-import { supabase } from '@/integrations/supabase/client';
 import ActivityInfoDialog from './activities/ActivityInfoDialog';
 import ActivityConfirmDialog from './activities/ActivityConfirmDialog';
-import ActivityFilters from './activities/ActivityFilters';
-import ActivityCategories from './activities/ActivityCategories';
+import ActivityDisplay from './activities/ActivityDisplay';
+import { useActivityClaim } from '@/hooks/useActivityClaim';
+import { useUndoClaim } from '@/hooks/useUndoClaim';
 import { activityInfo } from './activities/utils';
 
 const ActivityList = () => {
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<'common' | 'personal'>('common');
-  const [undoInProgress, setUndoInProgress] = useState(false);
 
   const {
     commonActivities,
@@ -31,165 +26,49 @@ const ActivityList = () => {
     refreshData
   } = useActivities();
 
-  const handleClaim = async (activity: Activity) => {
-    if (!user) {
-      toast.error("Du måste vara inloggad för att claima aktiviteter");
-      return;
-    }
+  // Hook for handling undo claim functionality
+  const { handleUndoClaim } = useUndoClaim(undoClaimActivity, refreshData);
 
-    if (claimedToday.includes(activity.id)) {
-      toast.error("Du har redan claimat denna aktivitet idag");
-      return;
-    }
+  // Hook for handling claim functionality
+  const {
+    selectedActivity,
+    setSelectedActivity,
+    confirmOpen,
+    setConfirmOpen,
+    handleClaim,
+    handleConfirmClaim
+  } = useActivityClaim(
+    user,
+    claimedToday,
+    progressiveActivities,
+    saveClaimedActivity,
+    refreshData
+  );
 
-    setSelectedActivity(activity);
-
-    // Debug the activity properties
-    console.log(`Claiming activity:`, JSON.stringify(activity, null, 2));
-    
-    // Check if this is a progressive activity
-    const isProgressiveActivity = activity.progressive && activity.progress_steps && activity.progress_steps > 1;
-    const currentProgress = progressiveActivities[activity.id]?.currentProgress || 0;
-    const maxProgress = activity.progress_steps || 1;
-    
-    console.log(`Is progressive: ${isProgressiveActivity}, progress: ${currentProgress}/${maxProgress}`);
-    
-    // For activities that require photos
-    if (activity.requiresPhoto) {
-      // Open file upload
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (file) {
-          try {
-            // Upload file to Supabase Storage
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user.id}/${activity.id}_${Date.now()}.${fileExt}`;
-            
-            const { data, error } = await supabase.storage
-              .from('activity-photos')
-              .upload(fileName, file);
-
-            if (error) throw error;
-
-            // Get public URL
-            const { data: urlData } = supabase.storage
-              .from('activity-photos')
-              .getPublicUrl(fileName);
-
-            console.log(`Processing activity: ${activity.name}`);
-            console.log(`Is progressive: ${isProgressiveActivity}, current progress: ${currentProgress}, max progress: ${maxProgress}`);
-            
-            if (isProgressiveActivity) {
-              // For progressive activities with photos, we need to handle progress tracking
-              console.log(`Handling progressive activity with photo: ${activity.name}`);
-              
-              // Call saveClaimedActivity which handles the progressive logic internally
-              const success = await saveClaimedActivity(activity, urlData.publicUrl);
-              
-              if (success) {
-                // Calculate the new progress after this claim
-                const newProgress = currentProgress + 1;
-                
-                // Show appropriate message based on progress
-                if (newProgress < maxProgress) {
-                  toast.success(`Steg ${newProgress}/${maxProgress} klart! Fortsätt så.`);
-                } else {
-                  toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
-                }
-                
-                // Refresh data to update the UI
-                refreshData();
-              }
-            } else {
-              // For regular (non-progressive) activities with photo
-              await saveClaimedActivity(activity, urlData.publicUrl);
-              toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
-              refreshData();
-            }
-          } catch (error: any) {
-            console.error("Error handling activity with photo:", error);
-            toast.error(`Uppladdning misslyckades: ${error.message}`);
-          }
-        }
-      };
-      input.click();
-    } else {
-      // Open confirmation dialog for activities without photo requirement
-      setConfirmOpen(true);
-    }
-  };
-
-  const handleConfirmClaim = async () => {
-    if (selectedActivity) {
-      const success = await saveClaimedActivity(selectedActivity);
-      if (success) {
-        setConfirmOpen(false);
-        // Refresh data after claim
-        refreshData();
-      }
-    }
-  };
-
-  const handleUndoClaim = async (activityId: string) => {
-    if (undoInProgress) {
-      toast.info("En annan aktivitet bearbetas redan, vänta lite");
-      return;
-    }
-    
-    setUndoInProgress(true);
-    try {
-      const success = await undoClaimActivity(activityId);
-      if (success) {
-        // Force a refresh after the undo completes successfully
-        setTimeout(() => refreshData(), 500);
-      }
-    } finally {
-      setUndoInProgress(false);
-    }
+  const getActivitiesBySection = () => {
+    return activeSection === 'common' ? commonActivities : personalActivities;
   };
 
   if (loading) {
     return <div className="p-4 text-center">Laddar aktiviteter...</div>;
   }
 
-  const getActivitiesBySection = () => {
-    return activeSection === 'common' ? commonActivities : personalActivities;
-  };
-
-  const hasActivities = commonActivities.length > 0 || personalActivities.length > 0;
-
   return (
     <div className="space-y-4">
-      <Card className="p-4">
-        <ActivityFilters 
-          activeSection={activeSection} 
-          setActiveSection={setActiveSection} 
-        />
-
-        <CardContent className="p-0">
-          {error ? (
-            <div className="text-center p-8 text-red-500">
-              Ett fel uppstod: {error}. Försök igen senare.
-            </div>
-          ) : (
-            <ActivityCategories
-              activities={getActivitiesBySection()}
-              activeSection={activeSection}
-              claimedToday={claimedToday}
-              progressiveActivities={progressiveActivities}
-              onClaim={handleClaim}
-              onInfo={(activity) => {
-                setSelectedActivity(activity);
-                setInfoOpen(true);
-              }}
-              onUndo={handleUndoClaim}
-            />
-          )}
-        </CardContent>
-      </Card>
+      <ActivityDisplay
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        activities={getActivitiesBySection()}
+        claimedToday={claimedToday}
+        progressiveActivities={progressiveActivities}
+        error={error}
+        onClaim={handleClaim}
+        onInfo={(activity) => {
+          setSelectedActivity(activity);
+          setInfoOpen(true);
+        }}
+        onUndo={handleUndoClaim}
+      />
 
       {/* Info Dialog */}
       <ActivityInfoDialog
