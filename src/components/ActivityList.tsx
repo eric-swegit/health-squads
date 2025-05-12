@@ -44,6 +44,7 @@ const ActivityList = () => {
 
     setSelectedActivity(activity);
 
+    // Check if this is a progressive activity
     const isProgressiveActivity = activity.progressive && activity.progress_steps && activity.progress_steps > 1;
     const currentProgress = progressiveActivities[activity.id]?.currentProgress || 0;
     const maxProgress = activity.progress_steps || 1;
@@ -73,28 +74,36 @@ const ActivityList = () => {
               .from('activity-photos')
               .getPublicUrl(fileName);
 
-            // Special handling for progressive activities with photos
+            console.log(`Processing activity: ${activity.name}`);
+            console.log(`Is progressive: ${isProgressiveActivity}, current progress: ${currentProgress}, max progress: ${maxProgress}`);
+            
             if (isProgressiveActivity) {
-              console.log(`Handling progressive activity with photo: ${activity.name}, currentProgress=${currentProgress}, maxProgress=${maxProgress}`);
-              // Just pass the photo URL to the handleProgressiveActivity function
-              // which will handle creating/updating the progress correctly
-              await saveClaimedActivity(activity, urlData.publicUrl);
+              // For progressive activities with photos, we need to handle progress tracking
+              console.log(`Handling progressive activity with photo: ${activity.name}`);
               
-              // Show appropriate message based on progress
-              const newProgress = currentProgress + 1;
-              if (newProgress < maxProgress) {
-                toast.success(`Steg ${newProgress}/${maxProgress} klart! Fortsätt så.`);
-              } else {
-                toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
+              // Call saveClaimedActivity which handles the progressive logic internally
+              const success = await saveClaimedActivity(activity, urlData.publicUrl);
+              
+              if (success) {
+                // Calculate the new progress after this claim
+                const newProgress = currentProgress + 1;
+                
+                // Show appropriate message based on progress
+                if (newProgress < maxProgress) {
+                  toast.success(`Steg ${newProgress}/${maxProgress} klart! Fortsätt så.`);
+                } else {
+                  toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
+                }
+                
+                // Refresh data to update the UI
+                refreshData();
               }
             } else {
               // For regular (non-progressive) activities with photo
               await saveClaimedActivity(activity, urlData.publicUrl);
               toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
+              refreshData();
             }
-            
-            // Refresh data after claim regardless of activity type
-            refreshData();
           } catch (error: any) {
             console.error("Error handling activity with photo:", error);
             toast.error(`Uppladdning misslyckades: ${error.message}`);
