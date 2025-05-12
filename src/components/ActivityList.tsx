@@ -22,6 +22,7 @@ const ActivityList = () => {
     commonActivities,
     personalActivities,
     claimedToday,
+    progressiveActivities,
     loading,
     error,
     user,
@@ -43,6 +44,11 @@ const ActivityList = () => {
 
     setSelectedActivity(activity);
 
+    const isProgressiveActivity = activity.progressive && activity.progress_steps && activity.progress_steps > 1;
+    const currentProgress = progressiveActivities[activity.id]?.currentProgress || 0;
+    const maxProgress = activity.progress_steps || 1;
+    
+    // For progressive activities that require photos
     if (activity.requiresPhoto) {
       // Open file upload
       const input = document.createElement('input');
@@ -70,6 +76,11 @@ const ActivityList = () => {
             // Save claimed activity with photo URL
             await saveClaimedActivity(activity, urlData.publicUrl);
             
+            // Show appropriate message based on progress
+            if (isProgressiveActivity && currentProgress + 1 < maxProgress) {
+              toast.success(`Steg ${currentProgress + 1}/${maxProgress} klart! Fortsätt så.`);
+            }
+            
             // Refresh data after claim
             refreshData();
           } catch (error: any) {
@@ -79,7 +90,7 @@ const ActivityList = () => {
       };
       input.click();
     } else {
-      // Open confirmation dialog
+      // Open confirmation dialog for activities without photo requirement
       setConfirmOpen(true);
     }
   };
@@ -141,6 +152,7 @@ const ActivityList = () => {
               activities={getActivitiesBySection()}
               activeSection={activeSection}
               claimedToday={claimedToday}
+              progressiveActivities={progressiveActivities}
               onClaim={handleClaim}
               onInfo={(activity) => {
                 setSelectedActivity(activity);

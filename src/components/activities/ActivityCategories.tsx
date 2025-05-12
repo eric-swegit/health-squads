@@ -8,6 +8,11 @@ interface ActivityCategoriesProps {
   activities: Activity[];
   activeSection: 'common' | 'personal';
   claimedToday: string[];
+  progressiveActivities?: Record<string, {
+    currentProgress: number;
+    maxProgress: number;
+    photoUrls: string[];
+  }>;
   onClaim: (activity: Activity) => void;
   onInfo: (activity: Activity) => void;
   onUndo: (activityId: string) => void;
@@ -17,6 +22,7 @@ const ActivityCategories = ({
   activities, 
   activeSection, 
   claimedToday, 
+  progressiveActivities = {},
   onClaim, 
   onInfo, 
   onUndo 
@@ -33,6 +39,7 @@ const ActivityCategories = ({
           title={getCategoryTitle(category)}
           activities={categoryActivities}
           claimedToday={claimedToday}
+          progressiveActivities={progressiveActivities}
           onClaim={onClaim}
           onInfo={onInfo}
           onUndo={onUndo}

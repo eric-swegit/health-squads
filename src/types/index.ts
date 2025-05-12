@@ -18,6 +18,8 @@ export interface Activity {
   category?: 'physical' | 'diet' | 'mind';
   duration?: string;
   amount?: string;
+  progressive?: boolean;
+  progress_steps?: number;
 }
 
 export interface ClaimedActivity {
@@ -26,6 +28,7 @@ export interface ClaimedActivity {
   activityId: string;
   date: string;
   photoUrl?: string;
+  photoUrls?: string[];
   createdAt: string;
 }
 
@@ -42,4 +45,16 @@ export interface Like {
   userId: string;
   claimedActivityId: string;
   createdAt: string;
+}
+
+export interface ProgressTracking {
+  id: string;
+  userId: string;
+  activityId: string;
+  currentProgress: number;
+  maxProgress: number;
+  photoUrls: string[];
+  progressTimestamps: string[];
+  createdAt: string;
+  lastUpdatedAt: string;
 }

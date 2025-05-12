@@ -6,10 +6,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Activity } from '@/types';
 import { getActivityIcon, getActivityTitle, getActivityDuration } from './utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Progress } from '@/components/ui/progress';
 
 interface ActivityCardProps {
   activity: Activity;
   isClaimed: boolean;
+  progress?: { current: number; max: number };
   onClaim: (activity: Activity) => void;
   onInfo: (activity: Activity) => void;
   onUndo: (activityId: string) => void;
@@ -18,6 +20,7 @@ interface ActivityCardProps {
 const ActivityCard = ({ 
   activity, 
   isClaimed, 
+  progress,
   onClaim, 
   onInfo, 
   onUndo 
@@ -27,13 +30,17 @@ const ActivityCard = ({
   const duration = activity.duration || getActivityDuration(activity.name);
   const isMobile = useIsMobile();
   
+  const isInProgress = !isClaimed && progress && progress.current > 0 && progress.current < progress.max;
+  const progressPercentage = progress ? (progress.current / progress.max) * 100 : 0;
+  
   return (
     <Card 
       key={activity.id} 
       className={`overflow-hidden transition-all hover:shadow-md cursor-pointer aspect-square ${
         isMobile ? 'min-h-[150px]' : 'max-h-[120px]'
       } ${
-        isClaimed ? 'bg-gray-100 border-green-300' : ''
+        isClaimed ? 'bg-gray-100 border-green-300' : 
+        isInProgress ? 'bg-blue-50 border-blue-200' : ''
       }`}
       onClick={() => !isClaimed && onClaim(activity)}
     >
@@ -66,6 +73,16 @@ const ActivityCard = ({
           <ActivityIcon className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} text-purple-600 mb-1`} />
           <h3 className={`font-medium ${isMobile ? 'text-sm' : 'text-xs'} text-center`}>{title}</h3>
           <p className="text-xs text-gray-500 mt-1 text-center">{duration}</p>
+          
+          {/* Progress indicator for progressive activities */}
+          {isInProgress && (
+            <div className="w-full mt-2">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-blue-600 font-medium">{progress.current}/{progress.max}</span>
+              </div>
+              <Progress value={progressPercentage} className="h-1.5" />
+            </div>
+          )}
         </div>
         
         {/* Status banner if claimed */}
@@ -85,6 +102,13 @@ const ActivityCard = ({
             >
               <RotateCcw className="h-3 w-3" /> Ångra
             </Button>
+          </div>
+        )}
+        
+        {/* In progress banner */}
+        {isInProgress && (
+          <div className="absolute bottom-0 inset-x-0 bg-blue-100/90 py-1 flex justify-center">
+            <span className="text-blue-700 text-xs font-medium">Pågående</span>
           </div>
         )}
         

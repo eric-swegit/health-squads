@@ -10,6 +10,11 @@ interface CategorySectionProps {
   title: string;
   activities: Activity[];
   claimedToday: string[];
+  progressiveActivities?: Record<string, {
+    currentProgress: number;
+    maxProgress: number;
+    photoUrls: string[];
+  }>;
   onClaim: (activity: Activity) => void;
   onInfo: (activity: Activity) => void;
   onUndo: (activityId: string) => void;
@@ -19,6 +24,7 @@ const CategorySection = ({
   title, 
   activities, 
   claimedToday, 
+  progressiveActivities = {},
   onClaim, 
   onInfo,
   onUndo
@@ -44,16 +50,24 @@ const CategorySection = ({
       
       {expanded && (
         <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-3 md:grid-cols-4 lg:grid-cols-5'} gap-2`}>
-          {activities.map((activity) => (
-            <ActivityCard
-              key={activity.id}
-              activity={activity}
-              isClaimed={claimedToday.includes(activity.id)}
-              onClaim={onClaim}
-              onInfo={onInfo}
-              onUndo={onUndo}
-            />
-          ))}
+          {activities.map((activity) => {
+            const activityProgress = progressiveActivities[activity.id];
+            
+            return (
+              <ActivityCard
+                key={activity.id}
+                activity={activity}
+                isClaimed={claimedToday.includes(activity.id)}
+                progress={activityProgress ? {
+                  current: activityProgress.currentProgress,
+                  max: activityProgress.maxProgress
+                } : undefined}
+                onClaim={onClaim}
+                onInfo={onInfo}
+                onUndo={onUndo}
+              />
+            );
+          })}
         </div>
       )}
     </div>

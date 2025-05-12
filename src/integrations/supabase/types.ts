@@ -15,6 +15,8 @@ export type Database = {
           id: string
           name: string
           points: number
+          progress_steps: number | null
+          progressive: boolean
           requires_photo: boolean
           type: string
           user_id: string | null
@@ -24,6 +26,8 @@ export type Database = {
           id?: string
           name: string
           points: number
+          progress_steps?: number | null
+          progressive?: boolean
           requires_photo?: boolean
           type: string
           user_id?: string | null
@@ -33,6 +37,8 @@ export type Database = {
           id?: string
           name?: string
           points?: number
+          progress_steps?: number | null
+          progressive?: boolean
           requires_photo?: boolean
           type?: string
           user_id?: string | null
@@ -46,6 +52,7 @@ export type Database = {
           date: string
           id: string
           photo_url: string | null
+          photo_urls: string[] | null
           user_id: string
         }
         Insert: {
@@ -54,6 +61,7 @@ export type Database = {
           date?: string
           id?: string
           photo_url?: string | null
+          photo_urls?: string[] | null
           user_id: string
         }
         Update: {
@@ -62,6 +70,7 @@ export type Database = {
           date?: string
           id?: string
           photo_url?: string | null
+          photo_urls?: string[] | null
           user_id?: string
         }
         Relationships: [
@@ -248,6 +257,50 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_tracking: {
+        Row: {
+          activity_id: string
+          created_at: string
+          current_progress: number
+          id: string
+          last_updated_at: string
+          max_progress: number
+          photo_urls: string[]
+          progress_timestamps: string[]
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          current_progress?: number
+          id?: string
+          last_updated_at?: string
+          max_progress: number
+          photo_urls?: string[]
+          progress_timestamps?: string[]
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          current_progress?: number
+          id?: string
+          last_updated_at?: string
+          max_progress?: number
+          photo_urls?: string[]
+          progress_timestamps?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_tracking_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       feed_activities: {
@@ -258,6 +311,7 @@ export type Database = {
           date: string | null
           id: string | null
           photo_url: string | null
+          photo_urls: string[] | null
           points: number | null
           profile_image_url: string | null
           user_id: string | null

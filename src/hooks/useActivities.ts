@@ -18,6 +18,7 @@ export const useActivities = () => {
   
   const {
     claimedToday,
+    progressiveActivities,
     saveClaimedActivity,
     undoClaimActivity,
     error: claimedError
@@ -34,6 +35,7 @@ export const useActivities = () => {
     commonActivities,
     personalActivities,
     claimedToday,
+    progressiveActivities,
     loading,
     error,
     user,

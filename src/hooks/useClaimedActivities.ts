@@ -6,6 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useClaimedActivities = (user: { id: string } | null, refreshTrigger: number) => {
   const [claimedToday, setClaimedToday] = useState<string[]>([]);
+  const [progressiveActivities, setProgressiveActivities] = useState<Record<string, {
+    currentProgress: number;
+    maxProgress: number;
+    photoUrls: string[];
+  }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [undoInProgress, setUndoInProgress] = useState<string | null>(null);
@@ -14,6 +19,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     const fetchClaimedActivities = async () => {
       if (!user) {
         setClaimedToday([]);
+        setProgressiveActivities({});
         setLoading(false);
         return;
       }
@@ -24,7 +30,8 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       try {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         
-        const { data, error: fetchError } = await supabase
+        // Fetch fully claimed activities
+        const { data: claimedData, error: fetchError } = await supabase
           .from('claimed_activities')
           .select('activity_id')
           .eq('user_id', user.id)
@@ -32,7 +39,35 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
 
         if (fetchError) throw fetchError;
         
-        setClaimedToday(data ? data.map(item => item.activity_id) : []);
+        // Fetch in-progress activities
+        const { data: progressData, error: progressError } = await supabase
+          .from('progress_tracking')
+          .select('*')
+          .eq('user_id', user.id);
+          
+        if (progressError) throw progressError;
+        
+        // Set fully claimed activities
+        setClaimedToday(claimedData ? claimedData.map(item => item.activity_id) : []);
+        
+        // Set in-progress activities
+        const progressMap: Record<string, {
+          currentProgress: number;
+          maxProgress: number;
+          photoUrls: string[];
+        }> = {};
+        
+        if (progressData) {
+          progressData.forEach(item => {
+            progressMap[item.activity_id] = {
+              currentProgress: item.current_progress,
+              maxProgress: item.max_progress,
+              photoUrls: item.photo_urls || []
+            };
+          });
+        }
+        
+        setProgressiveActivities(progressMap);
       } catch (error: any) {
         console.error("Error fetching claimed activities:", error);
         setError(`Kunde inte hämta genomförda aktiviteter: ${error.message}`);
@@ -51,6 +86,12 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     }
 
     try {
+      // Handle progressive activities
+      if (activity.progressive && activity.progress_steps && activity.progress_steps > 1) {
+        return await handleProgressiveActivity(activity, photoUrl);
+      }
+      
+      // Handle regular activities
       const { error } = await supabase
         .from('claimed_activities')
         .insert({
@@ -72,6 +113,98 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       return false;
     }
   };
+  
+  // New function to handle progressive activities
+  const handleProgressiveActivity = async (activity: Activity, photoUrl?: string) => {
+    if (!user || !activity.progressive || !activity.progress_steps) {
+      return false;
+    }
+    
+    const activityProgress = progressiveActivities[activity.id];
+    const currentProgress = activityProgress?.currentProgress || 0;
+    const maxProgress = activity.progress_steps;
+    
+    try {
+      const today = new Date().toISOString();
+      
+      if (currentProgress < maxProgress) {
+        // Activity is still in progress
+        const newProgress = currentProgress + 1;
+        const photoUrls = [...(activityProgress?.photoUrls || [])];
+        
+        if (photoUrl) {
+          photoUrls.push(photoUrl);
+        }
+        
+        if (newProgress < maxProgress) {
+          // Update progress tracking
+          const { error } = await supabase
+            .from('progress_tracking')
+            .upsert({
+              user_id: user.id,
+              activity_id: activity.id,
+              current_progress: newProgress,
+              max_progress: maxProgress,
+              photo_urls: photoUrls,
+              progress_timestamps: [...(activityProgress?.photoUrls || []).map(() => ''), today],
+              last_updated_at: today
+            });
+            
+          if (error) throw error;
+          
+          // Optimistically update the local state
+          setProgressiveActivities(prev => ({
+            ...prev,
+            [activity.id]: {
+              currentProgress: newProgress,
+              maxProgress: maxProgress,
+              photoUrls: photoUrls
+            }
+          }));
+          
+          toast.success(`Steg ${newProgress}/${maxProgress} klart för "${activity.name}"!`);
+          return true;
+        } else {
+          // Final step reached - mark activity as completed
+          const { error: claimError } = await supabase
+            .from('claimed_activities')
+            .insert({
+              user_id: user.id,
+              activity_id: activity.id,
+              photo_url: photoUrls[0] || null, // Set first photo as main photo
+              photo_urls: photoUrls // Store all photos
+            });
+            
+          if (claimError) throw claimError;
+          
+          // Delete the progress tracking record
+          const { error: deleteError } = await supabase
+            .from('progress_tracking')
+            .delete()
+            .match({ user_id: user.id, activity_id: activity.id });
+            
+          if (deleteError) throw deleteError;
+          
+          // Optimistically update the local state
+          setClaimedToday(prev => [...prev, activity.id]);
+          setProgressiveActivities(prev => {
+            const updated = { ...prev };
+            delete updated[activity.id];
+            return updated;
+          });
+          
+          toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error: any) {
+      console.error("Error updating progressive activity:", error);
+      toast.error(`Kunde inte uppdatera aktiviteten: ${error.message}`);
+      return false;
+    }
+  };
 
   const undoClaimActivity = async (activityId: string) => {
     if (!user) {
@@ -83,6 +216,15 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       // Set the activity as being processed
       setUndoInProgress(activityId);
       
+      // Check if activity is progressive and in progress
+      const activityProgress = progressiveActivities[activityId];
+      
+      if (activityProgress && activityProgress.currentProgress > 0) {
+        // Handle undo for progressive activity
+        return await undoProgressiveActivity(activityId, activityProgress);
+      }
+      
+      // Handle regular activity undo
       // Optimistically update the local state first
       setClaimedToday(prev => prev.filter(id => id !== activityId));
       
@@ -133,6 +275,72 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     }
   };
   
+  // New function to handle undo for progressive activities
+  const undoProgressiveActivity = async (activityId: string, activityProgress: {
+    currentProgress: number;
+    maxProgress: number;
+    photoUrls: string[];
+  }) => {
+    try {
+      // Optimistically update the local state
+      const newPhotoUrls = [...activityProgress.photoUrls];
+      const newProgress = activityProgress.currentProgress - 1;
+      
+      if (newPhotoUrls.length > 0) {
+        newPhotoUrls.pop(); // Remove the last photo
+      }
+      
+      if (newProgress <= 0) {
+        // If no steps remain, delete the progress tracking record
+        const { error } = await supabase
+          .from('progress_tracking')
+          .delete()
+          .match({ user_id: user!.id, activity_id: activityId });
+          
+        if (error) throw error;
+        
+        // Update local state
+        setProgressiveActivities(prev => {
+          const updated = { ...prev };
+          delete updated[activityId];
+          return updated;
+        });
+        
+        toast.success("Aktivitetens framsteg har återställts");
+      } else {
+        // Update the progress tracking record with the new progress
+        const { error } = await supabase
+          .from('progress_tracking')
+          .update({
+            current_progress: newProgress,
+            photo_urls: newPhotoUrls,
+            last_updated_at: new Date().toISOString()
+          })
+          .match({ user_id: user!.id, activity_id: activityId });
+          
+        if (error) throw error;
+        
+        // Update local state
+        setProgressiveActivities(prev => ({
+          ...prev,
+          [activityId]: {
+            ...prev[activityId],
+            currentProgress: newProgress,
+            photoUrls: newPhotoUrls
+          }
+        }));
+        
+        toast.success(`Steg ${newProgress + 1}/${activityProgress.maxProgress} har ångrats`);
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error("Error removing progressive step:", error);
+      toast.error(`Kunde inte ångra steg: ${error.message}`);
+      return false;
+    }
+  };
+  
   // Helper function to re-fetch current claimed activities on error
   const fetchCurrentClaimedActivities = async () => {
     if (!user) return;
@@ -149,6 +357,30 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       if (data) {
         setClaimedToday(data.map(item => item.activity_id));
       }
+      
+      // Fetch in-progress activities
+      const { data: progressData } = await supabase
+        .from('progress_tracking')
+        .select('*')
+        .eq('user_id', user.id);
+        
+      if (progressData) {
+        const progressMap: Record<string, {
+          currentProgress: number;
+          maxProgress: number;
+          photoUrls: string[];
+        }> = {};
+        
+        progressData.forEach(item => {
+          progressMap[item.activity_id] = {
+            currentProgress: item.current_progress,
+            maxProgress: item.max_progress,
+            photoUrls: item.photo_urls || []
+          };
+        });
+        
+        setProgressiveActivities(progressMap);
+      }
     } catch (err) {
       console.error("Error refreshing claimed activities:", err);
     }
@@ -156,6 +388,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
 
   return {
     claimedToday,
+    progressiveActivities,
     saveClaimedActivity,
     undoClaimActivity,
     loading,
