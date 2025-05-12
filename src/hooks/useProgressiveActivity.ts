@@ -1,8 +1,7 @@
 
-import { useState } from 'react';
-import { Activity } from '@/types';
 import { toast } from "@/components/ui/sonner";
 import { supabase } from '@/integrations/supabase/client';
+import { Activity } from '@/types';
 
 export const useProgressiveActivity = () => {
   const handleProgressiveActivity = async (

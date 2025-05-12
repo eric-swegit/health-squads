@@ -96,7 +96,7 @@ export const removeClaimedActivity = async (userId: string, activityId: string) 
       .match({ 
         user_id: userId, 
         activity_id: activityId,
-        date: today // Added this to only delete the current day's entry
+        date: today
       });
 
     if (error) throw error;
