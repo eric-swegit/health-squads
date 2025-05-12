@@ -86,12 +86,23 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     }
 
     try {
+      // Debug log for activity properties
+      console.log("saveClaimedActivity called with:", {
+        activityId: activity.id,
+        activityName: activity.name,
+        progressive: activity.progressive,
+        progress_steps: activity.progress_steps,
+        photoUrl: photoUrl ? "provided" : "not provided"
+      });
+      
       // Handle progressive activities
       if (activity.progressive && activity.progress_steps && activity.progress_steps > 1) {
+        console.log("Detected progressive activity, handling with progress tracking");
         return await handleProgressiveActivity(activity, photoUrl);
       }
       
       // Handle regular activities
+      console.log("Handling regular (non-progressive) activity");
       const { error } = await supabase
         .from('claimed_activities')
         .insert({
@@ -117,6 +128,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
   // Updated function to handle progressive activities
   const handleProgressiveActivity = async (activity: Activity, photoUrl?: string) => {
     if (!user || !activity.progressive || !activity.progress_steps) {
+      console.log("Invalid progressive activity data:", { user: !!user, progressive: activity.progressive, steps: activity.progress_steps });
       return false;
     }
     
@@ -125,6 +137,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     try {
       // Get current progress for this activity, if it exists
       const activityProgress = progressiveActivities[activity.id];
+      console.log("Current progress for activity:", { activityId: activity.id, progress: activityProgress });
       
       // If this is the first step or activity doesn't exist in progress tracking yet
       if (!activityProgress) {
@@ -167,8 +180,11 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       const currentProgress = activityProgress.currentProgress;
       const maxProgress = activityProgress.maxProgress;
       
+      console.log(`Updating progressive activity: ${activity.name}, Current progress: ${currentProgress}/${maxProgress}`);
+      
       // Make sure we haven't already completed all steps
       if (currentProgress >= maxProgress) {
+        console.log("All steps already completed, cannot progress further");
         toast.info(`Du har redan klarat alla steg för "${activity.name}"`);
         return false;
       }

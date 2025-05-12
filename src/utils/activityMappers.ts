@@ -18,7 +18,9 @@ export const mapDbActivityToActivity = (dbActivity: any): Activity => {
     userId: dbActivity.user_id,
     category: category, // Set the calculated category
     duration: dbActivity.duration || null,
-    amount: dbActivity.amount || null
+    amount: dbActivity.amount || null,
+    progressive: dbActivity.progressive || false,
+    progress_steps: dbActivity.progress_steps || null
   };
 };
 

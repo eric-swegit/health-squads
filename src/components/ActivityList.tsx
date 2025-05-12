@@ -44,10 +44,15 @@ const ActivityList = () => {
 
     setSelectedActivity(activity);
 
+    // Debug the activity properties
+    console.log(`Claiming activity:`, JSON.stringify(activity, null, 2));
+    
     // Check if this is a progressive activity
     const isProgressiveActivity = activity.progressive && activity.progress_steps && activity.progress_steps > 1;
     const currentProgress = progressiveActivities[activity.id]?.currentProgress || 0;
     const maxProgress = activity.progress_steps || 1;
+    
+    console.log(`Is progressive: ${isProgressiveActivity}, progress: ${currentProgress}/${maxProgress}`);
     
     // For activities that require photos
     if (activity.requiresPhoto) {
