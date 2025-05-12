@@ -48,7 +48,7 @@ const ActivityList = () => {
     const currentProgress = progressiveActivities[activity.id]?.currentProgress || 0;
     const maxProgress = activity.progress_steps || 1;
     
-    // For progressive activities that require photos
+    // For activities that require photos
     if (activity.requiresPhoto) {
       // Open file upload
       const input = document.createElement('input');
@@ -73,17 +73,30 @@ const ActivityList = () => {
               .from('activity-photos')
               .getPublicUrl(fileName);
 
-            // Save claimed activity with photo URL
-            await saveClaimedActivity(activity, urlData.publicUrl);
-            
-            // Show appropriate message based on progress
-            if (isProgressiveActivity && currentProgress + 1 < maxProgress) {
-              toast.success(`Steg ${currentProgress + 1}/${maxProgress} klart! Fortsätt så.`);
+            // Special handling for progressive activities with photos
+            if (isProgressiveActivity) {
+              console.log(`Handling progressive activity with photo: ${activity.name}, currentProgress=${currentProgress}, maxProgress=${maxProgress}`);
+              // Just pass the photo URL to the handleProgressiveActivity function
+              // which will handle creating/updating the progress correctly
+              await saveClaimedActivity(activity, urlData.publicUrl);
+              
+              // Show appropriate message based on progress
+              const newProgress = currentProgress + 1;
+              if (newProgress < maxProgress) {
+                toast.success(`Steg ${newProgress}/${maxProgress} klart! Fortsätt så.`);
+              } else {
+                toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
+              }
+            } else {
+              // For regular (non-progressive) activities with photo
+              await saveClaimedActivity(activity, urlData.publicUrl);
+              toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
             }
             
-            // Refresh data after claim
+            // Refresh data after claim regardless of activity type
             refreshData();
           } catch (error: any) {
+            console.error("Error handling activity with photo:", error);
             toast.error(`Uppladdning misslyckades: ${error.message}`);
           }
         }
