@@ -16,6 +16,12 @@ export const useActivityList = (user: { id: string } | null, refreshTrigger: num
       setLoading(true);
       setError(null);
       
+      // Filter function to temporarily hide specific activities
+      const filterHiddenActivities = (activities: Activity[]) => {
+        const hiddenActivityNames = ['Gym']; // Change to [] to show all activities again
+        return activities.filter(activity => !hiddenActivityNames.includes(activity.name));
+      };
+      
       try {
         // Fetch common activities
         const { data: common, error: commonError } = await supabase
@@ -24,7 +30,8 @@ export const useActivityList = (user: { id: string } | null, refreshTrigger: num
           .eq('type', 'common');
 
         if (commonError) throw commonError;
-        setCommonActivities(mapDbActivitiesToActivities(common || []));
+        const mappedCommon = mapDbActivitiesToActivities(common || []);
+        setCommonActivities(filterHiddenActivities(mappedCommon));
 
         // Fetch personal activities if user is available
         if (user) {
@@ -35,7 +42,8 @@ export const useActivityList = (user: { id: string } | null, refreshTrigger: num
             .eq('user_id', user.id);
 
           if (personalError) throw personalError;
-          setPersonalActivities(mapDbActivitiesToActivities(personal || []));
+          const mappedPersonal = mapDbActivitiesToActivities(personal || []);
+          setPersonalActivities(filterHiddenActivities(mappedPersonal));
         } else {
           setPersonalActivities([]);
         }
