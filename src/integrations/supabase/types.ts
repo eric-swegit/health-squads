@@ -341,6 +341,10 @@ export type Database = {
           total_points: number
         }[]
       }
+      reset_daily_points_cron: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
