@@ -65,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending email to: ${to}, subject: ${subject}`);
 
     const emailResponse = await resend.emails.send({
-      from: "Aktivitetsapp <onboarding@resend.dev>", // Ändra detta till din verifierade domän
+      from: "Health Squads <kontakt@healthsquads.fcwebben.se>",
       to: [to],
       subject: subject,
       html: emailHtml,
