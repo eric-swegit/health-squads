@@ -27,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
-    console.log(`Checking for users without activities on ${today}`);
+    console.log(`Sending daily reminders to all users on ${today}`);
 
     // Get all users
     const { data: profiles, error: profilesError } = await supabase
@@ -39,40 +39,22 @@ const handler = async (req: Request): Promise<Response> => {
       throw profilesError;
     }
 
-    console.log(`Found ${profiles?.length || 0} total users`);
-
-    // Get users who have already completed activities today
-    const { data: activeUsers, error: activeUsersError } = await supabase
-      .from('claimed_activities')
-      .select('user_id')
-      .eq('date', today);
-
-    if (activeUsersError) {
-      console.error("Error fetching active users:", activeUsersError);
-      throw activeUsersError;
-    }
-
-    const activeUserIds = new Set(activeUsers?.map(user => user.user_id) || []);
-    console.log(`Found ${activeUserIds.size} users who have completed activities today`);
-
-    // Filter users who haven't completed any activities today
-    const inactiveUsers = profiles?.filter(profile => !activeUserIds.has(profile.id)) || [];
-    console.log(`Found ${inactiveUsers.length} users who need reminders`);
+    console.log(`Found ${profiles?.length || 0} total users to send reminders to`);
 
     let emailsSent = 0;
     let emailsFailed = 0;
 
-    // Send reminder emails to inactive users
-    for (const user of inactiveUsers) {
+    // Send daily reminder emails to all users
+    for (const user of profiles || []) {
       try {
-        console.log(`Sending reminder email to: ${user.email}`);
+        console.log(`Sending daily reminder email to: ${user.email}`);
 
         const emailResponse = await resend.emails.send({
           from: "Health Squads <kontakt@healthsquads.fcwebben.se>",
           to: [user.email],
-          subject: "🌟 Glöm inte dina aktiviteter idag!",
+          subject: "🌟 Dags för din dagliga aktivitetsreflektion!",
           html: generateDailyReminderEmail(user.name),
-          text: `Hej ${user.name}! Glöm inte att logga dina aktiviteter för idag. Logga in i appen för att fortsätta samla poäng och hålla din streak levande!`,
+          text: `Hej ${user.name}! Dags att reflektera över dagen och logga dina aktiviteter. Logga in i appen för att se vad du gjort idag och planera för imorgon!`,
         });
 
         console.log(`Email sent successfully to ${user.email}:`, emailResponse.data?.id);
@@ -85,11 +67,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const summary = {
       totalUsers: profiles?.length || 0,
-      activeUsers: activeUserIds.size,
-      inactiveUsers: inactiveUsers.length,
       emailsSent,
       emailsFailed,
-      date: today
+      date: today,
+      reminderType: 'daily_reflection'
     };
 
     console.log("Daily reminder job completed:", summary);
@@ -119,33 +100,34 @@ const handler = async (req: Request): Promise<Response> => {
 function generateDailyReminderEmail(name: string) {
   return `
     <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-      <h1 style="color: #7c3aed;">🌟 Glöm inte dina aktiviteter idag!</h1>
+      <h1 style="color: #7c3aed;">🌟 Dags för din dagliga aktivitetsreflektion!</h1>
       <p>Hej ${name || 'där'}!</p>
-      <p>Det är dags att logga dina aktiviteter för idag. Du har fortfarande tid att samla poäng och hålla din streak levande!</p>
+      <p>Det är 20:00 och dags för din dagliga check-in! Hur har dagen varit och vilka aktiviteter har du gjort?</p>
       
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
-        <h3 style="color: white; margin: 0 0 10px 0;">Varför vänta?</h3>
-        <p style="color: white; margin: 0;">Varje aktivitet för dig närmare dina mål!</p>
+        <h3 style="color: white; margin: 0 0 10px 0;">Dagens reflektion</h3>
+        <p style="color: white; margin: 0;">Ta en stund att reflektera över dagen och logga dina aktiviteter!</p>
       </div>
       
       <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="color: #374151;">Kom ihåg:</h3>
+        <h3 style="color: #374151;">Kom ihåg att:</h3>
         <ul style="color: #374151;">
-          <li>📊 Samla poäng för varje aktivitet</li>
+          <li>📊 Logga alla aktiviteter du gjort idag</li>
           <li>🔥 Håll din streak levande</li>
-          <li>🏆 Klättra på topplistan</li>
-          <li>💪 Bygg starka vanor</li>
+          <li>🏆 Se hur du ligger till på topplistan</li>
+          <li>💪 Planera för imorgon</li>
+          <li>🎯 Reflektera över dina framsteg</li>
         </ul>
       </div>
       
       <div style="text-align: center; margin: 30px 0;">
         <a href="https://cbypedcyszozqezowbbo.supabase.co" 
            style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
-          Logga dina aktiviteter nu
+          Öppna appen nu
         </a>
       </div>
       
-      <p style="color: #6b7280;">Ha en fantastisk dag!</p>
+      <p style="color: #6b7280;">Ha en fantastisk kväll!</p>
       <p style="color: #6b7280;">Mvh,<br>Aktivitetsapp-teamet</p>
     </div>
   `;

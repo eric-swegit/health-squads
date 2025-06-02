@@ -152,30 +152,31 @@ function generateEmailTemplate(template: string, data: Record<string, any>) {
       return {
         html: `
           <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-            <h1 style="color: #7c3aed;">🌟 Glöm inte dina aktiviteter idag!</h1>
+            <h1 style="color: #7c3aed;">🌟 Dags för din dagliga aktivitetsreflektion!</h1>
             <p>Hej ${data.name || 'där'}!</p>
-            <p>Det är dags att logga dina aktiviteter för idag. Du har fortfarande tid att samla poäng och hålla din streak levande!</p>
+            <p>Det är 20:00 och dags för din dagliga check-in! Hur har dagen varit och vilka aktiviteter har du gjort?</p>
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
-              <h3 style="color: white; margin: 0 0 10px 0;">Varför vänta?</h3>
-              <p style="color: white; margin: 0;">Varje aktivitet för dig närmare dina mål!</p>
+              <h3 style="color: white; margin: 0 0 10px 0;">Dagens reflektion</h3>
+              <p style="color: white; margin: 0;">Ta en stund att reflektera över dagen och logga dina aktiviteter!</p>
             </div>
             
             <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #374151;">Kom ihåg:</h3>
+              <h3 style="color: #374151;">Kom ihåg att:</h3>
               <ul style="color: #374151;">
-                <li>📊 Samla poäng för varje aktivitet</li>
+                <li>📊 Logga alla aktiviteter du gjort idag</li>
                 <li>🔥 Håll din streak levande</li>
-                <li>🏆 Klättra på topplistan</li>
-                <li>💪 Bygg starka vanor</li>
+                <li>🏆 Se hur du ligger till på topplistan</li>
+                <li>💪 Planera för imorgon</li>
+                <li>🎯 Reflektera över dina framsteg</li>
               </ul>
             </div>
             
-            <p style="color: #6b7280;">Ha en fantastisk dag!</p>
+            <p style="color: #6b7280;">Ha en fantastisk kväll!</p>
             <p style="color: #6b7280;">Mvh,<br>Aktivitetsapp-teamet</p>
           </div>
         `,
-        text: `🌟 Glöm inte dina aktiviteter idag! Hej ${data.name || 'där'}! Det är dags att logga dina aktiviteter för idag. Logga in i appen för att fortsätta samla poäng!`
+        text: `🌟 Dags för din dagliga aktivitetsreflektion! Hej ${data.name || 'där'}! Det är 20:00 och dags för din dagliga check-in. Logga in i appen för att reflektera över dagen!`
       };
     
     default:
