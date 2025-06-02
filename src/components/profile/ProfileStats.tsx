@@ -21,12 +21,13 @@ const ProfileStats = ({ stats }: ProfileStatsProps) => {
           
           <div className="bg-gray-50 p-4 rounded-lg text-center">
             <p className="text-2xl font-bold text-purple-600">{stats.activitiesThisWeek}</p>
-            <p className="text-sm text-gray-500">Aktiviteter denna vecka</p>
+            <p className="text-sm text-gray-500">Aktiviteter senaste 7 dagarna</p>
           </div>
           
           <div className="bg-gray-50 p-4 rounded-lg text-center">
             <p className="text-2xl font-bold text-purple-600">{stats.streak}</p>
             <p className="text-sm text-gray-500">Dagars streak</p>
+            <p className="text-xs text-gray-400 mt-1">Längsta streak: {stats.longestStreak}</p>
           </div>
         </div>
       </CardContent>

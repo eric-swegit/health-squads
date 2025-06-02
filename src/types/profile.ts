@@ -12,4 +12,5 @@ export interface UserStats {
   totalActivities: number;
   activitiesThisWeek: number;
   streak: number;
+  longestStreak: number;
 }
