@@ -105,8 +105,8 @@ function generateDailyReminderEmail(name: string) {
       <p>Det är 20:00 och dags för din dagliga check-in! Hur har dagen varit och vilka aktiviteter har du gjort?</p>
       
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
-        <h3 style="color: white; margin: 0 0 10px 0;">Dagens reflektion</h3>
-        <p style="color: white; margin: 0;">Ta en stund att reflektera över dagen och logga dina aktiviteter!</p>
+        <h3 style="color: black; margin: 0 0 10px 0;">Dagens reflektion</h3>
+        <p style="color: black; margin: 0;">Ta en stund att reflektera över dagen och logga dina aktiviteter!</p>
       </div>
       
       <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -121,14 +121,14 @@ function generateDailyReminderEmail(name: string) {
       </div>
       
       <div style="text-align: center; margin: 30px 0;">
-        <a href="https://cbypedcyszozqezowbbo.supabase.co" 
+        <a href="https://healthsquads.fcwebben.se" 
            style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
           Öppna appen nu
         </a>
       </div>
       
       <p style="color: #6b7280;">Ha en fantastisk kväll!</p>
-      <p style="color: #6b7280;">Mvh,<br>Aktivitetsapp-teamet</p>
+      <p style="color: #6b7280;">Mvh,<br>Health Squads-teamet</p>
     </div>
   `;
 }
