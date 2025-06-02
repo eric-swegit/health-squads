@@ -147,6 +147,36 @@ function generateEmailTemplate(template: string, data: Record<string, any>) {
         `,
         text: `🔥 Din ${data.streak || 0} dagars streak är i fara! Gör en aktivitet idag för att hålla den levande.`
       };
+
+    case 'daily-reminder':
+      return {
+        html: `
+          <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+            <h1 style="color: #7c3aed;">🌟 Glöm inte dina aktiviteter idag!</h1>
+            <p>Hej ${data.name || 'där'}!</p>
+            <p>Det är dags att logga dina aktiviteter för idag. Du har fortfarande tid att samla poäng och hålla din streak levande!</p>
+            
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
+              <h3 style="color: white; margin: 0 0 10px 0;">Varför vänta?</h3>
+              <p style="color: white; margin: 0;">Varje aktivitet för dig närmare dina mål!</p>
+            </div>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #374151;">Kom ihåg:</h3>
+              <ul style="color: #374151;">
+                <li>📊 Samla poäng för varje aktivitet</li>
+                <li>🔥 Håll din streak levande</li>
+                <li>🏆 Klättra på topplistan</li>
+                <li>💪 Bygg starka vanor</li>
+              </ul>
+            </div>
+            
+            <p style="color: #6b7280;">Ha en fantastisk dag!</p>
+            <p style="color: #6b7280;">Mvh,<br>Aktivitetsapp-teamet</p>
+          </div>
+        `,
+        text: `🌟 Glöm inte dina aktiviteter idag! Hej ${data.name || 'där'}! Det är dags att logga dina aktiviteter för idag. Logga in i appen för att fortsätta samla poäng!`
+      };
     
     default:
       return {

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -7,7 +8,6 @@ import { useProfileData } from '@/hooks/useProfileData';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileStats from '@/components/profile/ProfileStats';
 import ActivityHistory from '@/components/profile/ActivityHistory';
-import EmailTester from '@/components/email/EmailTester';
 
 const ProfilePage = () => {
   const { profile, stats, loading, uploadingImage, setUploadingImage } = useProfileData();
@@ -46,8 +46,6 @@ const ProfilePage = () => {
         />
         
         <ProfileStats stats={stats} />
-        
-        <EmailTester />
         
         <ActivityHistory />
       </div>

@@ -42,3 +42,17 @@ export const sendStreakReminderEmail = async (email: string, name: string, strea
   if (error) throw error;
   return data;
 };
+
+export const sendDailyReminderEmail = async (email: string, name: string) => {
+  const { data, error } = await supabase.functions.invoke('send-email', {
+    body: {
+      to: email,
+      subject: '🌟 Glöm inte dina aktiviteter idag!',
+      template: 'daily-reminder',
+      templateData: { name }
+    }
+  });
+
+  if (error) throw error;
+  return data;
+};

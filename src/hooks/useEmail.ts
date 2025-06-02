@@ -14,6 +14,9 @@ export interface EmailTemplate {
     name?: string;
     streak?: number;
   };
+  'daily-reminder': {
+    name?: string;
+  };
 }
 
 export interface SendEmailOptions<T extends keyof EmailTemplate> {
