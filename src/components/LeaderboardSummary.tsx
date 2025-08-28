@@ -15,7 +15,7 @@ export const useLeaderboardData = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_profiles');
+      const { data, error } = await supabase.rpc('get_profiles_filtered');
       
       if (error) throw error;
       

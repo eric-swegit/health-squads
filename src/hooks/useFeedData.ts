@@ -15,10 +15,11 @@ export const useFeedData = (currentUser: string | null) => {
       try {
         setLoading(true);
         
-        // Fetch feed activities
+        // Fetch feed activities (only after 2025-08-27)
         const { data: feedData, error: feedError } = await supabase
           .from('feed_activities')
           .select('*')
+          .gte('created_at', '2025-08-27')
           .order('created_at', { ascending: false });
           
         if (feedError) throw feedError;

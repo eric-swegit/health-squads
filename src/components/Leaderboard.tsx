@@ -25,8 +25,8 @@ const Leaderboard = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        // Use the RPC function that bypasses RLS
-        const { data, error } = await supabase.rpc('get_profiles');
+        // Use the RPC function that bypasses RLS (filtered for dates after 2025-08-27)
+        const { data, error } = await supabase.rpc('get_profiles_filtered');
         
         if (error) throw error;
         
