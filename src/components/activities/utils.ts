@@ -29,7 +29,8 @@ export const getActivityCategory = (activityName: string): 'physical' | 'diet' |
     return 'physical';
   }
   if (activityName.includes("Vegetarisk") || activityName.includes("Frukt") || 
-      activityName.includes("vatten") || activityName.includes("koffein")) {
+      activityName.includes("vatten") || activityName.includes("koffein") || 
+      activityName.includes("socker")) {
     return 'diet';
   }
   return 'mind'; // Default to mind
@@ -64,6 +65,7 @@ export const getActivityTitle = (activityName: string): string => {
   if (activityName.includes("Vegetarisk")) return "Vegetarisk kost";
   if (activityName.includes("Frukt/grönt")) return "Frukt/grönt";
   if (activityName.includes("koffein")) return "Utan koffein";
+  if (activityName.includes("socker")) return "Utan socker";
   if (activityName.includes("Hemmaträning")) return "Hemmaträning";
   if (activityName.includes("Gym")) return "Gym";
   if (activityName.includes("Dricka")) return "Dricka vatten";
