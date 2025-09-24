@@ -8,6 +8,7 @@ import ActivityDisplay from './activities/ActivityDisplay';
 import { useActivityClaim } from '@/hooks/useActivityClaim';
 import { useUndoClaim } from '@/hooks/useUndoClaim';
 import { activityInfo } from './activities/utils';
+import { UploadProgress } from './ui/upload-progress';
 
 const ActivityList = () => {
   const [infoOpen, setInfoOpen] = useState(false);
@@ -36,7 +37,9 @@ const ActivityList = () => {
     confirmOpen,
     setConfirmOpen,
     handleClaim,
-    handleConfirmClaim
+    handleConfirmClaim,
+    uploading,
+    uploadProgress
   } = useActivityClaim(
     user,
     claimedToday,
@@ -85,6 +88,15 @@ const ActivityList = () => {
         activity={selectedActivity}
         onConfirm={handleConfirmClaim}
       />
+
+      {/* Upload Progress */}
+      {uploadProgress && (
+        <UploadProgress
+          stage={uploadProgress.stage}
+          progress={uploadProgress.progress}
+          message={uploadProgress.message}
+        />
+      )}
     </div>
   );
 };

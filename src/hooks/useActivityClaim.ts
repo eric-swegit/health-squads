@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Activity } from '@/types';
 import { toast } from "@/components/ui/sonner";
-import { usePhotoUpload } from './usePhotoUpload';
+import { useEnhancedPhotoUpload } from './useEnhancedPhotoUpload';
 
 export const useActivityClaim = (
   user: { id: string } | null,
@@ -17,7 +17,7 @@ export const useActivityClaim = (
 ) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const { openFileUploader } = usePhotoUpload(user?.id);
+  const { openFileUploader, uploading, uploadProgress } = useEnhancedPhotoUpload(user?.id);
 
   const handleClaim = async (activity: Activity) => {
     if (!user) {
@@ -114,6 +114,8 @@ export const useActivityClaim = (
     confirmOpen,
     setConfirmOpen,
     handleClaim,
-    handleConfirmClaim
+    handleConfirmClaim,
+    uploading,
+    uploadProgress
   };
 };
