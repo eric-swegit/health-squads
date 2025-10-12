@@ -1,7 +1,5 @@
-
-import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageSquare } from "lucide-react";
+import { Heart, MessageSquare, Bookmark } from "lucide-react";
 import { FeedItem } from "./types";
 
 interface FeedItemFooterProps {
@@ -14,29 +12,51 @@ const FeedItemFooter = ({ item, onLike, onOpenComments }: FeedItemFooterProps) =
   const commentsCount = item.commentsCount || 0;
   
   return (
-    <CardFooter className="p-4 pt-0 flex justify-between">
-      <div className="flex items-center gap-1">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-8 px-2 text-xs flex items-center gap-1"
-          onClick={() => onLike(item)}
-        >
-          <Heart className={`h-4 w-4 ${item.userLiked ? 'fill-red-500 text-red-500' : ''}`} />
-          {item.likes > 0 && <span>{item.likes} gillar</span>}
-        </Button>
+    <div className="px-4 pt-1 pb-2">
+      {/* Action buttons */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-auto p-0 hover:bg-transparent hover:opacity-60 transition-opacity"
+            onClick={() => onLike(item)}
+          >
+            <Heart 
+              className={`h-7 w-7 transition-all ${
+                item.userLiked 
+                  ? 'fill-red-500 text-red-500 scale-110' 
+                  : 'stroke-foreground'
+              }`} 
+            />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-auto p-0 hover:bg-transparent hover:opacity-60 transition-opacity"
+            onClick={() => onOpenComments(item)}
+          >
+            <MessageSquare className="h-7 w-7" />
+          </Button>
+        </div>
         
         <Button 
           variant="ghost" 
           size="sm" 
-          className="h-8 px-2 text-xs flex items-center gap-1"
-          onClick={() => onOpenComments(item)}
+          className="h-auto p-0 hover:bg-transparent hover:opacity-60 transition-opacity"
         >
-          <MessageSquare className="h-4 w-4" />
-          {commentsCount > 0 && <span>{commentsCount} kommentarer</span>}
+          <Bookmark className="h-6 w-6" />
         </Button>
       </div>
-    </CardFooter>
+      
+      {/* Likes count */}
+      {item.likes > 0 && (
+        <p className="text-sm font-semibold mb-1">
+          {item.likes} {item.likes === 1 ? 'gillning' : 'gillar detta'}
+        </p>
+      )}
+    </div>
   );
 };
 

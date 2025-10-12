@@ -124,14 +124,14 @@ const Dashboard = () => {
   const positionInfo = getUserPositionInfo();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-4">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-between items-center mb-4 px-4 pt-4">
           <h1 className="text-xl font-bold">Hej, {userName || 'vän'}!</h1>
         </div>
         
         {/* Challenge status */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-2 gap-4 mb-8 px-4">
           <Card className="p-4 flex items-center">
             <Calendar className="h-5 w-5 text-purple-600 mr-2" />
             <div>

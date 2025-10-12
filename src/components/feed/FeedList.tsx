@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import FeedItem from "./FeedItem";
 import CommentsDrawer from "./CommentsDrawer";
 import ImageViewer from "./ImageViewer";
+import FeedSkeleton from "./FeedSkeleton";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useCommentDrawer } from "@/hooks/useCommentDrawer";
 import { useImageViewer } from "@/hooks/useImageViewer";
@@ -77,18 +78,20 @@ const FeedList = () => {
 
   if (loading && feedItems.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-        <p>Laddar feed...</p>
+      <div className="space-y-8">
+        {[...Array(3)].map((_, i) => (
+          <FeedSkeleton key={i} />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {feedItems.length === 0 && !loading && (
-        <div className="p-8 text-center bg-white rounded-lg shadow">
-          <p className="text-gray-500">Inga aktiviteter i din feed än. När du och dina vänner gör aktiviteter kommer de att visas här!</p>
+        <div className="p-12 text-center">
+          <p className="text-muted-foreground text-lg">Inga aktiviteter i din feed än.</p>
+          <p className="text-muted-foreground text-sm mt-2">När du och dina vänner gör aktiviteter kommer de att visas här!</p>
         </div>
       )}
       

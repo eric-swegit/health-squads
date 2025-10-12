@@ -1,20 +1,22 @@
-
-import { CardContent } from "@/components/ui/card";
 import { FeedItem } from "./types";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import HeartAnimation from "./HeartAnimation";
 
 interface FeedItemContentProps {
   item: FeedItem;
   onOpenImage: (imageUrl: string, allImages?: string[]) => void;
+  onLike: (item: FeedItem) => void;
 }
 
-const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
+const FeedItemContent = ({ item, onOpenImage, onLike }: FeedItemContentProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchOffset, setTouchOffset] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const lastTapRef = useRef<number>(0);
   
   // Check if we have multiple photos
   const hasMultiplePhotos = Array.isArray(item.photo_urls) && item.photo_urls.length > 1;
@@ -62,18 +64,35 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
     setTouchStart(0);
     setTouchOffset(0);
   };
+
+  const handleDoubleTap = (e: React.MouseEvent | React.TouchEvent) => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapRef.current;
+    
+    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+      // Double tap detected
+      e.preventDefault();
+      if (!item.userLiked) {
+        setShowHeartAnimation(true);
+        onLike(item);
+      }
+    }
+    
+    lastTapRef.current = now;
+  };
   
   return (
-    <CardContent className="p-4">
-      <p className="mb-2">
-        Genomförde <span className="font-medium">{item.activity_name}</span> och tjänade <span className="font-medium text-purple-600">{item.points}p</span>!
-      </p>
-      
+    <>
       {photos.length > 0 && (
-        <div className="mt-3 relative overflow-hidden rounded-lg">
+        <div className="relative overflow-hidden bg-black">
+          <HeartAnimation 
+            show={showHeartAnimation} 
+            onComplete={() => setShowHeartAnimation(false)} 
+          />
+          
           {/* Photo carousel */}
           <div 
-            className="flex cursor-pointer"
+            className="flex select-none"
             style={{
               transform: `translateX(calc(-${currentImageIndex * 100}% + ${touchOffset}px))`,
               transition: isTransitioning || touchOffset === 0 ? 'transform 0.3s ease-out' : 'none'
@@ -81,16 +100,18 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onClick={() => onOpenImage(currentPhoto, photos)}
+            onClick={handleDoubleTap}
           >
             {photos.map((photo, index) => (
               <div key={index} className="w-full flex-shrink-0">
-                <img 
-                  src={photo} 
-                  alt={`${item.activity_name} ${index + 1}`}
-                  className="w-full h-auto max-h-[300px] object-contain bg-black"
-                  loading={index === currentImageIndex ? "eager" : "lazy"}
-                />
+                <div className="w-full aspect-[4/5] relative">
+                  <img 
+                    src={photo} 
+                    alt={`${item.activity_name} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    loading={index === currentImageIndex ? "eager" : "lazy"}
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -99,7 +120,7 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
           {hasMultiplePhotos && (
             <>
               <Button 
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 rounded-full p-1 h-8 w-8"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 rounded-full p-1 h-8 w-8 bg-black/50 hover:bg-black/70 border-0"
                 variant="secondary"
                 size="icon"
                 onClick={(e) => { 
@@ -107,11 +128,11 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
                   prevImage(); 
                 }}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 text-white" />
               </Button>
               
               <Button 
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full p-1 h-8 w-8"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full p-1 h-8 w-8 bg-black/50 hover:bg-black/70 border-0"
                 variant="secondary"
                 size="icon"
                 onClick={(e) => { 
@@ -119,20 +140,35 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
                   nextImage(); 
                 }}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-white" />
               </Button>
               
-              {/* Photo counter indicator */}
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/70 rounded-full px-2 py-1">
-                <span className="text-white text-xs">
-                  {currentImageIndex + 1} / {photos.length}
-                </span>
+              {/* Dots indicator */}
+              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                {photos.map((_, index) => (
+                  <div 
+                    key={index}
+                    className={`h-1.5 rounded-full transition-all ${
+                      index === currentImageIndex 
+                        ? 'w-1.5 bg-white' 
+                        : 'w-1.5 bg-white/50'
+                    }`}
+                  />
+                ))}
               </div>
             </>
           )}
         </div>
       )}
-    </CardContent>
+      
+      {/* Caption */}
+      <div className="px-4 pt-2">
+        <p className="text-sm">
+          <span className="font-semibold mr-1">{item.user_name}</span>
+          <span>Genomförde <span className="font-medium">{item.activity_name}</span> och tjänade <span className="font-medium text-primary">{item.points}p</span>!</span>
+        </p>
+      </div>
+    </>
   );
 };
 

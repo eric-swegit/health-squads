@@ -1,5 +1,3 @@
-
-import { CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MoreVertical } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -12,10 +10,10 @@ interface FeedItemHeaderProps {
 
 const FeedItemHeader = ({ item }: FeedItemHeaderProps) => {
   return (
-    <CardHeader className="p-4 pb-0">
+    <header className="px-4 py-3">
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10 overflow-hidden">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-11 w-11 overflow-hidden">
             <AvatarImage 
               src={item.profile_image_url || undefined} 
               className="object-cover"
@@ -23,15 +21,17 @@ const FeedItemHeader = ({ item }: FeedItemHeaderProps) => {
             <AvatarFallback>{item.user_name.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-medium">{item.user_name}</p>
-            <p className="text-xs text-gray-500">
+            <p className="font-semibold text-sm leading-tight">{item.user_name}</p>
+            <p className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: sv })}
             </p>
           </div>
         </div>
-        <MoreVertical className="h-5 w-5 text-gray-400" />
+        <button className="p-2 hover:opacity-60 transition-opacity">
+          <MoreVertical className="h-5 w-5" />
+        </button>
       </div>
-    </CardHeader>
+    </header>
   );
 };
 
