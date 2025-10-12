@@ -25,4 +25,5 @@ export interface FeedItem {
   likes: number;
   userLiked: boolean;
   comments: Comment[];
+  commentsCount?: number; // Used for initial display before loading comments
 }

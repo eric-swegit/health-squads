@@ -11,6 +11,8 @@ interface FeedItemFooterProps {
 }
 
 const FeedItemFooter = ({ item, onLike, onOpenComments }: FeedItemFooterProps) => {
+  const commentsCount = item.commentsCount || 0;
+  
   return (
     <CardFooter className="p-4 pt-0 flex justify-between">
       <div className="flex items-center gap-1">
@@ -31,7 +33,7 @@ const FeedItemFooter = ({ item, onLike, onOpenComments }: FeedItemFooterProps) =
           onClick={() => onOpenComments(item)}
         >
           <MessageSquare className="h-4 w-4" />
-          {item.comments.length > 0 && <span>{item.comments.length} kommentarer</span>}
+          {commentsCount > 0 && <span>{commentsCount} kommentarer</span>}
         </Button>
       </div>
     </CardFooter>

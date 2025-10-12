@@ -334,6 +334,21 @@ export type Database = {
       }
     }
     Functions: {
+      get_comments_summary: {
+        Args: { ids: string[] }
+        Returns: {
+          claimed_activity_id: string
+          comments_count: number
+        }[]
+      }
+      get_likes_summary: {
+        Args: { ids: string[]; in_user: string }
+        Returns: {
+          claimed_activity_id: string
+          likes_count: number
+          user_liked: boolean
+        }[]
+      }
       get_profiles: {
         Args: Record<PropertyKey, never>
         Returns: {

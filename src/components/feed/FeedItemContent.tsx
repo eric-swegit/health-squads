@@ -43,6 +43,7 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
               src={currentPhoto} 
               alt={item.activity_name}
               className="w-full h-auto max-h-[300px] object-contain bg-black"
+              loading="lazy"
             />
           </div>
           

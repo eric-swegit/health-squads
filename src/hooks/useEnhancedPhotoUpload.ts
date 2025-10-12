@@ -163,18 +163,55 @@ export const useEnhancedPhotoUpload = (userId: string | undefined) => {
     activity: Activity, 
     onPhotoSelected: (photoUrl: string | null) => void
   ) => {
+    // Create input element with better iOS compatibility
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     
+    // Style for iOS compatibility - append to body
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    input.style.pointerEvents = 'none';
+    document.body.appendChild(input);
+    
+    // Reset value to allow selecting the same file again
+    input.value = '';
+    
+    let hasResponded = false;
+    
+    const cleanup = () => {
+      if (input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
+    };
+    
     input.onchange = async (e) => {
+      if (hasResponded) return;
+      hasResponded = true;
+      
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         const photoUrl = await uploadPhoto(file, activity);
         onPhotoSelected(photoUrl);
+      } else {
+        onPhotoSelected(null);
       }
+      
+      cleanup();
     };
-    input.click();
+    
+    // Cleanup if user cancels (iOS Safari timeout)
+    setTimeout(() => {
+      if (!hasResponded) {
+        hasResponded = true;
+        cleanup();
+      }
+    }, 60000); // 60 second timeout
+    
+    // Trigger file picker with slight delay for iOS
+    setTimeout(() => {
+      input.click();
+    }, 0);
   };
 
   const cancelUpload = useCallback(() => {

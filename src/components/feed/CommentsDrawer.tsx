@@ -7,26 +7,27 @@ import {
   DrawerTitle,
   DrawerFooter
 } from "@/components/ui/drawer";
-import { FeedItem, Comment } from "./types";
+import { FeedItem } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import CommentItem from "./CommentItem";
 import CommentDrawerActivity from "./CommentDrawerActivity";
 import CommentInput from "./CommentInput";
+import { useComments } from "@/hooks/useComments";
+import { Loader2 } from "lucide-react";
 
 interface CommentsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedItem: FeedItem | null;
-  onAddComment: (comment: string) => void;
+  onCommentAdded: (itemId: string) => void;
 }
 
-const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: CommentsDrawerProps) => {
+const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: CommentsDrawerProps) => {
   const [newComment, setNewComment] = useState("");
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string>("");
   const [currentUserImage, setCurrentUserImage] = useState<string | null>(null);
-  const [localComments, setLocalComments] = useState<Comment[]>([]);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +43,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
           .from('profiles')
           .select('name, profile_image_url')
           .eq('id', data.session.user.id)
-          .maybeSingle(); // Changed from single() to maybeSingle()
+          .maybeSingle();
           
         if (!error && profileData) {
           setCurrentUserName(profileData.name);
@@ -54,12 +55,13 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
     getCurrentUser();
   }, []);
 
-  // Initialize local comments when the selected item changes
-  useEffect(() => {
-    if (selectedItem) {
-      setLocalComments(selectedItem.comments);
-    }
-  }, [selectedItem]);
+  // Use the new useComments hook for on-demand comment loading
+  const { 
+    comments, 
+    loading: loadingComments, 
+    updateCommentLikes, 
+    addCommentOptimistically 
+  } = useComments(open ? selectedItem?.id || null : null, currentUser);
 
   // Auto-focus the comment input when the drawer opens
   useEffect(() => {
@@ -75,15 +77,17 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
     if (commentsContainerRef.current) {
       commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight;
     }
-  }, [localComments.length]);
+  }, [comments.length]);
 
-  const handleAddComment = () => {
-    if (newComment.trim() && selectedItem) {
+  const handleAddComment = async () => {
+    if (newComment.trim() && selectedItem && currentUser) {
+      const commentText = newComment.trim();
+      
       // Create temporary comment for immediate display
-      const tempComment: Comment = {
+      const tempComment = {
         id: `temp-${Date.now()}`,
-        user_id: currentUser || '',
-        content: newComment,
+        user_id: currentUser,
+        content: commentText,
         created_at: new Date().toISOString(),
         user_name: currentUserName || 'Du',
         profile_image_url: currentUserImage,
@@ -92,48 +96,53 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
       };
       
       // Update local state immediately
-      setLocalComments(prevComments => [...prevComments, tempComment]);
-      
-      // Call the parent handler to actually post the comment
-      onAddComment(newComment);
+      addCommentOptimistically(tempComment);
       
       // Clear the input
       setNewComment("");
+      
+      // Call the parent handler to notify about new comment
+      onCommentAdded(selectedItem.id);
+      
+      // Post comment to database
+      try {
+        const { error } = await supabase
+          .from('comments')
+          .insert({
+            claimed_activity_id: selectedItem.id,
+            user_id: currentUser,
+            content: commentText
+          });
+          
+        if (error) throw error;
+      } catch (error: any) {
+        console.error("Error posting comment:", error);
+        toast.error(`Kunde inte posta kommentar: ${error.message}`);
+      }
     }
   };
 
-  const handleLikeComment = async (comment: Comment) => {
-    if (!currentUser || !selectedItem) return;
+  const handleLikeComment = async (commentId: string, currentlyLiked: boolean) => {
+    if (!currentUser) return;
     
     try {
-      // Update local state immediately for responsiveness
-      setLocalComments(prevComments => 
-        prevComments.map(c => {
-          if (c.id === comment.id) {
-            return {
-              ...c,
-              likes: comment.userLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
-              userLiked: !comment.userLiked
-            };
-          }
-          return c;
-        })
-      );
+      // Update local state immediately
+      updateCommentLikes(commentId, !currentlyLiked);
       
       // Make the API call
-      if (comment.userLiked) {
+      if (currentlyLiked) {
         // Unlike
         await supabase
           .from('comment_likes')
           .delete()
-          .eq('comment_id', comment.id)
+          .eq('comment_id', commentId)
           .eq('user_id', currentUser);
       } else {
         // Like - Check if already liked first to prevent duplicate key errors
         const { data: existingLike } = await supabase
           .from('comment_likes')
           .select('id')
-          .eq('comment_id', comment.id)
+          .eq('comment_id', commentId)
           .eq('user_id', currentUser)
           .maybeSingle();
           
@@ -142,7 +151,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
           await supabase
             .from('comment_likes')
             .insert({
-              comment_id: comment.id,
+              comment_id: commentId,
               user_id: currentUser
             });
         }
@@ -152,9 +161,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
       toast.error(`Kunde inte uppdatera gillning: ${error.message}`);
       
       // Revert local state if the API call fails
-      if (selectedItem) {
-        setLocalComments(selectedItem.comments);
-      }
+      updateCommentLikes(commentId, currentlyLiked);
     }
   };
 
@@ -173,14 +180,18 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onAddComment }: Comm
           ref={commentsContainerRef}
           className="flex-1 overflow-y-auto p-4 space-y-4"
         >
-          {!selectedItem || localComments.length === 0 ? (
+          {loadingComments ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : comments.length === 0 ? (
             <p className="text-center text-gray-500 py-8">Inga kommentarer än. Bli först med att kommentera!</p>
           ) : (
-            localComments.map((comment) => (
+            comments.map((comment) => (
               <CommentItem 
                 key={comment.id} 
                 comment={comment} 
-                onLike={() => handleLikeComment(comment)}
+                onLike={() => handleLikeComment(comment.id, comment.userLiked)}
               />
             ))
           )}
