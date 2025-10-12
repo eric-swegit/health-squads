@@ -10,7 +10,7 @@ import { toast } from "@/components/ui/sonner";
 export const useLeaderboardData = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
+  const [lastFetch, setLastFetch] = useState<number>(0);
 
   const fetchUsers = async () => {
     try {
@@ -28,50 +28,37 @@ export const useLeaderboardData = () => {
           dailyPoints: user.daily_points,
         }));
         setUsers(mappedUsers);
+        setLastFetch(Date.now());
       }
     } catch (error: any) {
       console.error('Failed to fetch users:', error.message);
-      toast.error(`Failed to fetch users: ${error.message}`);
+      toast.error(`Kunde inte ladda leaderboard: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Initial fetch
     fetchUsers();
-    
-    // Set up a realtime subscription to profiles changes
-    const channel = supabase
-      .channel('public:profiles')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'profiles' }, 
-        (payload) => {
-          console.log('Profile changed:', payload);
-          fetchUsers();
-        }
-      )
-      .subscribe();
-      
-    // Also set up a subscription to claimed_activities changes
-    const claimedActivitiesChannel = supabase
-      .channel('claimed_activities_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'claimed_activities' }, 
-        (payload) => {
-          console.log('Activity claimed:', payload);
-          fetchUsers();
-        }
-      )
-      .subscribe();
-      
+
+    // Set up polling every 60 seconds (instead of aggressive real-time)
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 60000);
+
     return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(claimedActivitiesChannel);
+      clearInterval(interval);
     };
-  }, [lastRefresh]);
+  }, []);
 
   const refreshLeaderboard = () => {
-    setLastRefresh(Date.now());
+    // Prevent refresh spam - minimum 5 seconds between refreshes
+    const now = Date.now();
+    if (now - lastFetch < 5000) {
+      return;
+    }
+    fetchUsers();
   };
 
   return { users, loading, refreshLeaderboard };

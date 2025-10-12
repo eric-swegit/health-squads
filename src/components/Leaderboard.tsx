@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/sonner";
 const Leaderboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastFetch, setLastFetch] = useState<number>(0);
 
   const getRewardText = (position: number) => {
     switch (position) {
@@ -21,34 +22,43 @@ const Leaderboard = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        // Use the RPC function that bypasses RLS (filtered for dates after 2025-08-27)
-        const { data, error } = await supabase.rpc('get_profiles_filtered');
-        
-        if (error) throw error;
-        
-        if (data) {
-          // Map to our User type
-          const mappedUsers = data.map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            totalPoints: user.total_points,
-            dailyPoints: user.daily_points,
-          }));
-          setUsers(mappedUsers);
-        }
-      } catch (error: any) {
-        toast.error(`Failed to fetch users: ${error.message}`);
-      } finally {
-        setLoading(false);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.rpc('get_profiles_filtered');
+      
+      if (error) throw error;
+      
+      if (data) {
+        const mappedUsers = data.map((user: any) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          totalPoints: user.total_points,
+          dailyPoints: user.daily_points,
+        }));
+        setUsers(mappedUsers);
+        setLastFetch(Date.now());
       }
-    };
+    } catch (error: any) {
+      toast.error(`Kunde inte ladda leaderboard: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    // Initial fetch
     fetchUsers();
+
+    // Set up polling every 60 seconds (instead of aggressive real-time)
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 60000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   if (loading) {
