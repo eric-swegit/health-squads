@@ -11,6 +11,7 @@ import { useImageViewer } from "@/hooks/useImageViewer";
 import { useLikeActions } from "@/hooks/useLikeActions";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 const FeedList = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -87,7 +88,7 @@ const FeedList = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div>
       {feedItems.length === 0 && !loading && (
         <div className="p-12 text-center">
           <p className="text-muted-foreground text-lg">Inga aktiviteter i din feed än.</p>
@@ -95,14 +96,16 @@ const FeedList = () => {
         </div>
       )}
       
-      {feedItems.map((item) => (
-        <FeedItem 
-          key={item.id} 
-          item={item} 
-          onLike={handleLike}
-          onOpenComments={openCommentDrawer}
-          onOpenImage={openImageDialog}
-        />
+      {feedItems.map((item, index) => (
+        <div key={item.id}>
+          <FeedItem 
+            item={item} 
+            onLike={handleLike}
+            onOpenComments={openCommentDrawer}
+            onOpenImage={openImageDialog}
+          />
+          {index < feedItems.length - 1 && <Separator className="my-6" />}
+        </div>
       ))}
       
       {/* Infinite scroll sentinel */}

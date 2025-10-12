@@ -1,12 +1,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { 
-  Drawer, 
-  DrawerContent, 
-  DrawerHeader, 
-  DrawerTitle,
-  DrawerFooter
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FeedItem } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
@@ -14,7 +12,8 @@ import CommentItem from "./CommentItem";
 import CommentDrawerActivity from "./CommentDrawerActivity";
 import CommentInput from "./CommentInput";
 import { useComments } from "@/hooks/useComments";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface CommentsDrawerProps {
   open: boolean;
@@ -28,7 +27,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: Co
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string>("");
   const [currentUserImage, setCurrentUserImage] = useState<string | null>(null);
-  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const commentInputRef = useRef<HTMLInputElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch current user
@@ -166,11 +165,21 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: Co
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh] flex flex-col">
-        <DrawerHeader className="px-4 py-2 border-b">
-          <DrawerTitle>Kommentarer</DrawerTitle>
-        </DrawerHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex flex-col h-full m-0 p-0 rounded-none max-w-none">
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-background border-b px-4 py-3 z-10 flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => onOpenChange(false)}
+            className="h-8 w-8"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+          <DialogTitle className="text-base font-semibold">Kommentarer</DialogTitle>
+          <div className="w-8" /> {/* Spacer for balance */}
+        </div>
         
         {/* Activity Content */}
         {selectedItem && <CommentDrawerActivity item={selectedItem} />}
@@ -178,7 +187,7 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: Co
         {/* Comments List */}
         <div 
           ref={commentsContainerRef}
-          className="flex-1 overflow-y-auto p-4 space-y-4"
+          className="flex-1 overflow-y-auto px-4 space-y-4"
         >
           {loadingComments ? (
             <div className="flex items-center justify-center py-8">
@@ -197,17 +206,17 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: Co
           )}
         </div>
         
-        {/* Comment Input */}
-        <DrawerFooter className="p-3 border-t">
+        {/* Sticky Comment Input */}
+        <div className="sticky bottom-0 bg-background border-t p-3 z-10">
           <CommentInput
             value={newComment}
             onChange={setNewComment}
             onSubmit={handleAddComment}
             inputRef={commentInputRef}
           />
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
