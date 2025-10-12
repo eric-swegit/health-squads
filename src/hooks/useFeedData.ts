@@ -74,6 +74,49 @@ export const useFeedData = (currentUser: string | null) => {
         console.error("Error fetching comments:", commentsError);
       }
       
+      // Fetch latest 2 comments for each item
+      const { data: latestComments, error: commentsDataError } = await supabase
+        .from('comments')
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id,
+          claimed_activity_id,
+          profiles:user_id (
+            name,
+            profile_image_url
+          )
+        `)
+        .in('claimed_activity_id', itemIds)
+        .order('created_at', { ascending: false });
+        
+      if (commentsDataError) {
+        console.error("Error fetching comments data:", commentsDataError);
+      }
+      
+      // Group comments by claimed_activity_id and take latest 2
+      const commentsDataMap = new Map<string, any[]>();
+      (latestComments || []).forEach(comment => {
+        const activityId = comment.claimed_activity_id;
+        if (!commentsDataMap.has(activityId)) {
+          commentsDataMap.set(activityId, []);
+        }
+        const existingComments = commentsDataMap.get(activityId)!;
+        if (existingComments.length < 2) {
+          existingComments.push({
+            id: comment.id,
+            content: comment.content,
+            created_at: comment.created_at,
+            user_id: comment.user_id,
+            user_name: (comment.profiles as any)?.name || 'Okänd',
+            profile_image_url: (comment.profiles as any)?.profile_image_url || null,
+            likes: 0,
+            userLiked: false
+          });
+        }
+      });
+      
       // Create lookup maps
       const likesMap = new Map(
         (likesSummary || []).map(l => [l.claimed_activity_id, l])
@@ -85,11 +128,13 @@ export const useFeedData = (currentUser: string | null) => {
       // Map items with aggregated data
       const itemsWithData = feedData.map(item => {
         const likesData = likesMap.get(item.id);
+        const itemComments = commentsDataMap.get(item.id) || [];
+        // Reverse to show oldest first (Instagram style)
         return {
           ...item,
           likes: likesData?.likes_count || 0,
           userLiked: likesData?.user_liked || false,
-          comments: [], // Comments loaded on-demand
+          comments: itemComments.reverse(),
           commentsCount: commentsMap.get(item.id) || 0
         };
       });
