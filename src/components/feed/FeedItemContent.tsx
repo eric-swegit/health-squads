@@ -1,7 +1,7 @@
 
 import { CardContent } from "@/components/ui/card";
 import { FeedItem } from "./types";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -12,8 +12,9 @@ interface FeedItemContentProps {
 
 const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const touchStartX = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchOffset, setTouchOffset] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   
   // Check if we have multiple photos
   const hasMultiplePhotos = Array.isArray(item.photo_urls) && item.photo_urls.length > 1;
@@ -21,36 +22,45 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
   const currentPhoto = photos[currentImageIndex];
   
   const nextImage = () => {
+    setIsTransitioning(true);
     setCurrentImageIndex(prev => (prev + 1) % photos.length);
+    setTimeout(() => setIsTransitioning(false), 300);
   };
   
   const prevImage = () => {
+    setIsTransitioning(true);
     setCurrentImageIndex(prev => (prev - 1 + photos.length) % photos.length);
+    setTimeout(() => setIsTransitioning(false), 300);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+    if (!hasMultiplePhotos) return;
+    setTouchStart(e.touches[0].clientX);
+    setTouchOffset(0);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
+    if (!hasMultiplePhotos || touchStart === 0) return;
+    const currentTouch = e.touches[0].clientX;
+    const diff = currentTouch - touchStart;
+    setTouchOffset(diff);
   };
 
   const handleTouchEnd = () => {
     if (!hasMultiplePhotos) return;
     
-    const swipeDistance = touchStartX.current - touchEndX.current;
     const minSwipeDistance = 50;
 
-    if (Math.abs(swipeDistance) > minSwipeDistance) {
-      if (swipeDistance > 0) {
-        // Swiped left - go to next image
+    if (Math.abs(touchOffset) > minSwipeDistance) {
+      if (touchOffset < 0) {
         nextImage();
       } else {
-        // Swiped right - go to previous image
         prevImage();
       }
     }
+    
+    setTouchStart(0);
+    setTouchOffset(0);
   };
   
   return (
@@ -60,21 +70,29 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
       </p>
       
       {photos.length > 0 && (
-        <div className="mt-3 relative">
-          {/* Photo */}
+        <div className="mt-3 relative overflow-hidden rounded-lg">
+          {/* Photo carousel */}
           <div 
-            className="rounded-lg overflow-hidden cursor-pointer"
-            onClick={() => onOpenImage(currentPhoto, photos)}
+            className="flex cursor-pointer"
+            style={{
+              transform: `translateX(calc(-${currentImageIndex * 100}% + ${touchOffset}px))`,
+              transition: isTransitioning || touchOffset === 0 ? 'transform 0.3s ease-out' : 'none'
+            }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onClick={() => onOpenImage(currentPhoto, photos)}
           >
-            <img 
-              src={currentPhoto} 
-              alt={item.activity_name}
-              className="w-full h-auto max-h-[300px] object-contain bg-black"
-              loading="lazy"
-            />
+            {photos.map((photo, index) => (
+              <div key={index} className="w-full flex-shrink-0">
+                <img 
+                  src={photo} 
+                  alt={`${item.activity_name} ${index + 1}`}
+                  className="w-full h-auto max-h-[300px] object-contain bg-black"
+                  loading={index === currentImageIndex ? "eager" : "lazy"}
+                />
+              </div>
+            ))}
           </div>
           
           {/* Navigation controls for multiple images */}
