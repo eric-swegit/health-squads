@@ -18,7 +18,7 @@ export const useActivityList = (user: { id: string } | null, refreshTrigger: num
       
       // Filter function to temporarily hide specific activities
       const filterHiddenActivities = (activities: Activity[]) => {
-        const hiddenActivityNames = ['HIDDEN_20000_steg', 'HIDDEN_20K_steg', '20K steg', 'Gym 30 min']; // Change to [] to show all activities again
+        const hiddenActivityNames = ['HIDDEN_20000_steg', 'HIDDEN_20K_steg', '20K steg']; // Change to [] to show all activities again
         return activities.filter(activity => !hiddenActivityNames.includes(activity.name));
       };
       
