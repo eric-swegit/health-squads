@@ -9,7 +9,7 @@ interface FeedItemProps {
   item: FeedItemType;
   onLike: (item: FeedItemType) => void;
   onOpenComments: (item: FeedItemType) => void;
-  onOpenImage: (imageUrl: string) => void;
+  onOpenImage: (imageUrl: string, allImages?: string[]) => void;
 }
 
 const FeedItem = ({ item, onLike, onOpenComments, onOpenImage }: FeedItemProps) => {

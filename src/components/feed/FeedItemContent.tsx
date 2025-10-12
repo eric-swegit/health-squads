@@ -1,17 +1,19 @@
 
 import { CardContent } from "@/components/ui/card";
 import { FeedItem } from "./types";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeedItemContentProps {
   item: FeedItem;
-  onOpenImage: (imageUrl: string) => void;
+  onOpenImage: (imageUrl: string, allImages?: string[]) => void;
 }
 
 const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
   
   // Check if we have multiple photos
   const hasMultiplePhotos = Array.isArray(item.photo_urls) && item.photo_urls.length > 1;
@@ -25,6 +27,31 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
   const prevImage = () => {
     setCurrentImageIndex(prev => (prev - 1 + photos.length) % photos.length);
   };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!hasMultiplePhotos) return;
+    
+    const swipeDistance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      if (swipeDistance > 0) {
+        // Swiped left - go to next image
+        nextImage();
+      } else {
+        // Swiped right - go to previous image
+        prevImage();
+      }
+    }
+  };
   
   return (
     <CardContent className="p-4">
@@ -37,7 +64,10 @@ const FeedItemContent = ({ item, onOpenImage }: FeedItemContentProps) => {
           {/* Photo */}
           <div 
             className="rounded-lg overflow-hidden cursor-pointer"
-            onClick={() => onOpenImage(currentPhoto)}
+            onClick={() => onOpenImage(currentPhoto, photos)}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             <img 
               src={currentPhoto} 

@@ -39,8 +39,11 @@ const FeedList = () => {
   const { 
     imageDialogOpen, 
     setImageDialogOpen, 
-    selectedImage, 
-    openImageDialog 
+    selectedImages,
+    currentImageIndex,
+    openImageDialog,
+    nextImage,
+    prevImage
   } = useImageViewer();
   
   const { handleLike } = useLikeActions(currentUser, updateItemLikes);
@@ -132,10 +135,13 @@ const FeedList = () => {
       />
       
       {/* Image Dialog */}
-      <ImageViewer
-        open={imageDialogOpen}
-        onOpenChange={setImageDialogOpen}
-        imageUrl={selectedImage}
+      <ImageViewer 
+        open={imageDialogOpen} 
+        onOpenChange={setImageDialogOpen} 
+        images={selectedImages}
+        currentIndex={currentImageIndex}
+        onNext={nextImage}
+        onPrev={prevImage}
       />
     </div>
   );
