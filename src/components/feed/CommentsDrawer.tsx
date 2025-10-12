@@ -1,10 +1,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { 
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { FeedItem } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
@@ -165,10 +167,10 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: Co
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col h-full m-0 p-0 rounded-none max-w-none">
-        {/* Sticky Header */}
-        <div className="sticky top-0 bg-background border-b px-4 py-3 z-10 flex items-center justify-between">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="h-[65vh] flex flex-col">
+        {/* Header */}
+        <DrawerHeader className="border-b flex flex-row items-center justify-between px-4 py-3">
           <Button 
             variant="ghost" 
             size="icon"
@@ -177,9 +179,9 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: Co
           >
             <X className="h-5 w-5" />
           </Button>
-          <DialogTitle className="text-base font-semibold">Kommentarer</DialogTitle>
+          <DrawerTitle className="text-base font-semibold">Kommentarer</DrawerTitle>
           <div className="w-8" /> {/* Spacer for balance */}
-        </div>
+        </DrawerHeader>
         
         {/* Activity Content */}
         {selectedItem && <CommentDrawerActivity item={selectedItem} />}
@@ -207,16 +209,16 @@ const CommentsDrawer = ({ open, onOpenChange, selectedItem, onCommentAdded }: Co
         </div>
         
         {/* Sticky Comment Input */}
-        <div className="sticky bottom-0 bg-background border-t p-3 z-10">
+        <DrawerFooter className="border-t p-3">
           <CommentInput
             value={newComment}
             onChange={setNewComment}
             onSubmit={handleAddComment}
             inputRef={commentInputRef}
           />
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

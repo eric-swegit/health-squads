@@ -19,7 +19,7 @@ const FeedItemFooter = ({ item, onLike, onOpenComments }: FeedItemFooterProps) =
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-auto p-0 hover:bg-transparent hover:opacity-60 transition-opacity"
+            className="h-auto p-0 hover:bg-transparent hover:opacity-60 transition-opacity flex items-center gap-1.5"
             onClick={() => onLike(item)}
           >
             <Heart 
@@ -29,15 +29,21 @@ const FeedItemFooter = ({ item, onLike, onOpenComments }: FeedItemFooterProps) =
                   : 'stroke-foreground'
               }`} 
             />
+            {item.likes > 0 && (
+              <span className="text-sm font-semibold">{item.likes}</span>
+            )}
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-auto p-0 hover:bg-transparent hover:opacity-60 transition-opacity"
+            className="h-auto p-0 hover:bg-transparent hover:opacity-60 transition-opacity flex items-center gap-1.5"
             onClick={() => onOpenComments(item)}
           >
             <MessageSquare className="h-7 w-7" />
+            {commentsCount > 0 && (
+              <span className="text-sm font-semibold">{commentsCount}</span>
+            )}
           </Button>
         </div>
         
@@ -49,13 +55,6 @@ const FeedItemFooter = ({ item, onLike, onOpenComments }: FeedItemFooterProps) =
           <Bookmark className="h-6 w-6" />
         </Button>
       </div>
-      
-      {/* Likes count */}
-      {item.likes > 0 && (
-        <p className="text-sm font-semibold mb-1">
-          {item.likes} {item.likes === 1 ? 'gillning' : 'gillar detta'}
-        </p>
-      )}
     </div>
   );
 };
