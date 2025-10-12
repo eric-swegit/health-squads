@@ -14,14 +14,6 @@ const FeedItemInlineComments = ({ comments, totalCount, onViewAll }: FeedItemInl
 
   return (
     <div className="px-4 pb-2 space-y-1">
-      {hasMore && (
-        <button 
-          onClick={onViewAll}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Visa alla {totalCount} kommentarer
-        </button>
-      )}
       {displayComments.map((comment) => (
         <div key={comment.id} className="text-sm">
           <span className="font-semibold mr-1">{comment.user_name}</span>
