@@ -145,24 +145,30 @@ const Dashboard = () => {
         </div>
         
         {/* Challenge status */}
-        <div className="grid grid-cols-2 gap-4 mb-8 px-4">
-          <Card className="p-4 flex items-center">
-            <Calendar className="h-5 w-5 text-purple-600 mr-2" />
-            <div>
-              <p className="text-sm text-gray-500">Tävlingen avslutas om</p>
-              <p className="font-bold text-lg">{daysLeft}D {hoursLeft}T {minutesLeft}M</p>
+        <Card className="mx-4 mb-8 overflow-hidden">
+          <div className="bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-6 w-6" />
+                <span className="text-sm font-medium opacity-90">Tävlingen avslutas om</span>
+              </div>
+              <div className="text-2xl font-bold tracking-wide">
+                {daysLeft}D {hoursLeft}T {minutesLeft}M
+              </div>
             </div>
-          </Card>
-          
-          <Card className="p-4 flex items-center">
-            <Medal className="h-5 w-5 text-purple-600 mr-2" />
-            <div>
-              <p className="text-sm text-gray-500">Mina poäng</p>
-              <p className="font-bold text-lg">{userPoints} poäng</p>
-              <p className="text-xs text-gray-500">{positionInfo.pointsText}</p>
+            
+            <div className="border-t border-primary-foreground/20 pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Medal className="h-6 w-6" />
+                  <span className="text-sm font-medium opacity-90">Dina poäng</span>
+                </div>
+                <div className="text-2xl font-bold">{userPoints}</div>
+              </div>
+              <p className="text-sm mt-2 opacity-90">{positionInfo.pointsText}</p>
             </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
         
         {/* Feed */}
         <FeedList />
