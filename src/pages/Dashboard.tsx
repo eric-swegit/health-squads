@@ -149,9 +149,8 @@ const Dashboard = () => {
           <Card className="p-4 flex items-center">
             <Calendar className="h-5 w-5 text-purple-600 mr-2" />
             <div>
-              <p className="text-sm text-gray-500">Dagar kvar</p>
-              <p className="font-bold text-lg">{daysLeft} dagar</p>
-              <p className="text-xs text-gray-500">{hoursLeft}h {minutesLeft}m</p>
+              <p className="text-sm text-gray-500">Tävlingen avslutas om</p>
+              <p className="font-bold text-lg">{daysLeft}D {hoursLeft}T {minutesLeft}M</p>
             </div>
           </Card>
           
