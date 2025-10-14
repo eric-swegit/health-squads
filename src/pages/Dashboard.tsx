@@ -146,7 +146,7 @@ const Dashboard = () => {
         
         {/* Challenge status */}
         <Card className="mx-4 mb-8 overflow-hidden">
-          <div className="bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground">
+          <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-orange-400 p-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-6 w-6" />
