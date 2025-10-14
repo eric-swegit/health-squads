@@ -11,6 +11,8 @@ const Dashboard = () => {
   const [userName, setUserName] = useState('');
   const [userPoints, setUserPoints] = useState(0);
   const [daysLeft, setDaysLeft] = useState(0);
+  const [hoursLeft, setHoursLeft] = useState(0);
+  const [minutesLeft, setMinutesLeft] = useState(0);
   const { users } = useLeaderboardData();
 
   // Get current user's position and point information
@@ -62,16 +64,28 @@ const Dashboard = () => {
 
   // Calculate days left in challenge
   useEffect(() => {
-    const calculateDaysLeft = () => {
-      const challengeEndDate = new Date('2025-10-15T23:59:59'); // 31 days from 2025-09-15
-      const today = new Date();
-      const diffTime = challengeEndDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      setDaysLeft(diffDays > 0 ? diffDays : 0);
+    const calculateTimeLeft = () => {
+      const challengeEndDate = new Date('2025-10-15T23:59:59');
+      const now = new Date();
+      const diffTime = challengeEndDate.getTime() - now.getTime();
+      
+      if (diffTime > 0) {
+        const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+        
+        setDaysLeft(days);
+        setHoursLeft(hours);
+        setMinutesLeft(minutes);
+      } else {
+        setDaysLeft(0);
+        setHoursLeft(0);
+        setMinutesLeft(0);
+      }
     };
 
-    calculateDaysLeft();
-    const interval = setInterval(calculateDaysLeft, 1000 * 60 * 60); // Update every hour
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000 * 60); // Update every minute
     
     return () => clearInterval(interval);
   }, []);
@@ -137,6 +151,7 @@ const Dashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Dagar kvar</p>
               <p className="font-bold text-lg">{daysLeft} dagar</p>
+              <p className="text-xs text-gray-500">{hoursLeft}h {minutesLeft}m</p>
             </div>
           </Card>
           
