@@ -14,7 +14,7 @@ const Leaderboard = () => {
 
   const getRewardText = (position: number) => {
     switch (position) {
-      case 1: return "1500 kr presentkort";
+      case 1: return "1000 kr presentkort";
       case 2: return "Kämpa du är nästan där";
       case 3: return "3km lopp under 25 min";
       case 4: return "6km lopp under 50 min";
