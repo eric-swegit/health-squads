@@ -23,7 +23,7 @@ export const useFeedData = (currentUser: string | null) => {
       let query = supabase
         .from('feed_activities')
         .select('*')
-        .gte('created_at', '2025-09-15')
+        .gte('created_at', '2025-11-02')
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
         .limit(PAGE_SIZE);

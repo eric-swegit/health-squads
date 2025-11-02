@@ -350,7 +350,7 @@ export type Database = {
         }[]
       }
       get_profiles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           daily_points: number
@@ -360,9 +360,15 @@ export type Database = {
           profile_image_url: string | null
           total_points: number
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_profiles_filtered: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           daily_points: number
@@ -373,10 +379,7 @@ export type Database = {
           total_points: number
         }[]
       }
-      reset_daily_points_cron: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      reset_daily_points_cron: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
