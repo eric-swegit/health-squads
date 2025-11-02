@@ -95,16 +95,31 @@ const Dashboard = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         try {
-          const { data, error } = await supabase
+          // Get user name
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('name, total_points')
+            .select('name')
             .eq('id', session.user.id)
             .single();
           
-          if (error) throw error;
-          if (data) {
-            setUserName(data.name);
-            setUserPoints(data.total_points);
+          if (profileError) throw profileError;
+          
+          // Calculate points from claimed activities after 2025-11-02
+          const { data: activitiesData, error: activitiesError } = await supabase
+            .from('claimed_activities')
+            .select('activities(points)')
+            .eq('user_id', session.user.id)
+            .gte('created_at', '2025-11-02');
+          
+          if (activitiesError) throw activitiesError;
+          
+          const totalPoints = activitiesData?.reduce((sum, item: any) => {
+            return sum + (item.activities?.points || 0);
+          }, 0) || 0;
+          
+          if (profileData) {
+            setUserName(profileData.name);
+            setUserPoints(totalPoints);
           }
         } catch (error: any) {
           console.error('Error fetching profile:', error);
@@ -119,11 +134,17 @@ const Dashboard = () => {
       localStorage.setItem('lastViewedFeed', new Date().toISOString());
     }
     
-    // Subscribe to profile changes
+    // Subscribe to profile and claimed activities changes
     const profileChannel = supabase
       .channel('profile_updates')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'profiles' }, 
+        () => {
+          getProfile();
+        }
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'claimed_activities' }, 
         () => {
           getProfile();
         }
