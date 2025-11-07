@@ -13,6 +13,7 @@ export interface Activity {
   name: string;
   points: number;
   requiresPhoto: boolean;
+  requiresGratitude?: boolean;
   type: 'common' | 'personal';
   userId?: string;
   category?: 'physical' | 'diet' | 'mind';
@@ -57,4 +58,14 @@ export interface ProgressTracking {
   progressTimestamps: string[];
   createdAt: string;
   lastUpdatedAt: string;
+}
+
+export interface GratitudeEntry {
+  id: string;
+  userId: string;
+  claimedActivityId: string;
+  gratitude1: string;
+  gratitude2: string;
+  gratitude3: string;
+  createdAt: string;
 }

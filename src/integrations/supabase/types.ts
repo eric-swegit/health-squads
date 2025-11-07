@@ -148,6 +148,51 @@ export type Database = {
           },
         ]
       }
+      gratitude_entries: {
+        Row: {
+          claimed_activity_id: string
+          created_at: string | null
+          gratitude_1: string
+          gratitude_2: string
+          gratitude_3: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_activity_id: string
+          created_at?: string | null
+          gratitude_1: string
+          gratitude_2: string
+          gratitude_3: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          claimed_activity_id?: string
+          created_at?: string | null
+          gratitude_1?: string
+          gratitude_2?: string
+          gratitude_3?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gratitude_entries_claimed_activity_id_fkey"
+            columns: ["claimed_activity_id"]
+            isOneToOne: false
+            referencedRelation: "claimed_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gratitude_entries_claimed_activity_id_fkey"
+            columns: ["claimed_activity_id"]
+            isOneToOne: false
+            referencedRelation: "feed_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       likes: {
         Row: {
           claimed_activity_id: string

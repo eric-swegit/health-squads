@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { Activity } from '@/types';
 import { toast } from "@/components/ui/sonner";
 import { useEnhancedPhotoUpload } from './useEnhancedPhotoUpload';
+import { supabase } from '@/integrations/supabase/client';
+
+const GRATITUDE_ACTIVITY_NAME = "Skriv ner 3 saker du är tacksam för idag";
 
 export const useActivityClaim = (
   user: { id: string } | null,
@@ -17,6 +20,7 @@ export const useActivityClaim = (
 ) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [gratitudeFormOpen, setGratitudeFormOpen] = useState(false);
   const { openFileUploader, uploading, uploadProgress } = useEnhancedPhotoUpload(user?.id);
 
   const handleClaim = async (activity: Activity) => {
@@ -31,6 +35,13 @@ export const useActivityClaim = (
     }
 
     setSelectedActivity(activity);
+
+    // Check if this is the gratitude activity
+    const isGratitudeActivity = activity.name === GRATITUDE_ACTIVITY_NAME;
+    if (isGratitudeActivity) {
+      setGratitudeFormOpen(true);
+      return;
+    }
 
     // Debug the activity properties
     console.log(`Claiming activity:`, JSON.stringify(activity, null, 2));
@@ -108,13 +119,54 @@ export const useActivityClaim = (
     }
   };
 
+  const handleGratitudeSubmit = async (gratitudes: [string, string, string]) => {
+    if (!selectedActivity || !user) return;
+    
+    try {
+      const success = await saveClaimedActivity(selectedActivity);
+      
+      if (success) {
+        const { data: claimedActivity } = await supabase
+          .from('claimed_activities')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('activity_id', selectedActivity.id)
+          .eq('date', new Date().toISOString().split('T')[0])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (claimedActivity) {
+          await supabase
+            .from('gratitude_entries')
+            .insert({
+              user_id: user.id,
+              claimed_activity_id: claimedActivity.id,
+              gratitude_1: gratitudes[0],
+              gratitude_2: gratitudes[1],
+              gratitude_3: gratitudes[2]
+            });
+          
+          toast.success(`Du har klarat av "${selectedActivity.name}"! +${selectedActivity.points} poäng`);
+          refreshData();
+        }
+      }
+    } catch (error) {
+      console.error("Error saving gratitude:", error);
+      toast.error("Kunde inte spara dina svar. Försök igen.");
+    }
+  };
+
   return {
     selectedActivity,
     setSelectedActivity,
     confirmOpen,
     setConfirmOpen,
+    gratitudeFormOpen,
+    setGratitudeFormOpen,
     handleClaim,
     handleConfirmClaim,
+    handleGratitudeSubmit,
     uploading,
     uploadProgress
   };

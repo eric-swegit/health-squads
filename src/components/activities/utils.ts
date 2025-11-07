@@ -22,7 +22,8 @@ export const activityInfo: Record<string, string> = {
   "20K steg": "Ta minst 20 000 steg under dagen.",
   "15K steg": "Ta minst 15 000 steg under dagen.",
   "10K steg": "Ta minst 10 000 steg under dagen.",
-  "5K steg": "Ta minst 5 000 steg under dagen."
+  "5K steg": "Ta minst 5 000 steg under dagen.",
+  "Skriv ner 3 saker du är tacksam för idag": "Ta dig tid att reflektera över din dag och identifiera tre saker som du känner tacksamhet för. Detta kan vara små eller stora saker - en god morgonkaffe, ett snällt ord från en kollega, eller något du är stolt över att ha åstadkommit."
 };
 
 export const getActivityCategory = (activityName: string): 'physical' | 'diet' | 'mind' => {

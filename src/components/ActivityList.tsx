@@ -5,6 +5,7 @@ import { useActivities } from '@/hooks/useActivities';
 import ActivityInfoDialog from './activities/ActivityInfoDialog';
 import ActivityConfirmDialog from './activities/ActivityConfirmDialog';
 import ActivityDisplay from './activities/ActivityDisplay';
+import GratitudeFormDialog from './activities/GratitudeFormDialog';
 import { useActivityClaim } from '@/hooks/useActivityClaim';
 import { useUndoClaim } from '@/hooks/useUndoClaim';
 import { activityInfo } from './activities/utils';
@@ -36,8 +37,11 @@ const ActivityList = () => {
     setSelectedActivity,
     confirmOpen,
     setConfirmOpen,
+    gratitudeFormOpen,
+    setGratitudeFormOpen,
     handleClaim,
     handleConfirmClaim,
+    handleGratitudeSubmit,
     uploading,
     uploadProgress
   } = useActivityClaim(
@@ -87,6 +91,14 @@ const ActivityList = () => {
         onOpenChange={setConfirmOpen}
         activity={selectedActivity}
         onConfirm={handleConfirmClaim}
+      />
+
+      {/* Gratitude Form Dialog */}
+      <GratitudeFormDialog
+        open={gratitudeFormOpen}
+        onOpenChange={setGratitudeFormOpen}
+        activity={selectedActivity}
+        onSubmit={handleGratitudeSubmit}
       />
 
       {/* Upload Progress */}
