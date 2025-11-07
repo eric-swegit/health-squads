@@ -20,6 +20,7 @@ export const activityInfo: Record<string, string> = {
   "Gym 30 min": "Besök gymmet och träna i minst 30 minuter.",
   "Dricka 1.5L vatten": "Drick minst 1,5 liter vatten under dagen.",
   "20K steg": "Ta minst 20 000 steg under dagen.",
+  "15K steg": "Ta minst 15 000 steg under dagen.",
   "10K steg": "Ta minst 10 000 steg under dagen.",
   "5K steg": "Ta minst 5 000 steg under dagen."
 };
@@ -53,6 +54,7 @@ export const getActivityDuration = (activityName: string): string => {
   if (activityName.includes("30 min")) return "30 min";
   if (activityName.includes("1.5L")) return "1.5 Liter";
   if (activityName.includes("20K")) return "20 000 steg";
+  if (activityName.includes("15K")) return "15 000 steg";
   if (activityName.includes("10K")) return "10 000 steg";
   if (activityName.includes("5K")) return "5 000 steg";
   if (activityName.includes("3 måltider")) return "3 måltider";
