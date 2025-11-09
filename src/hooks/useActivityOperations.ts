@@ -60,7 +60,8 @@ export const fetchProgressiveActivities = async (userId: string) => {
 export const saveRegularActivity = async (
   userId: string, 
   activity: Activity, 
-  photoUrl?: string
+  photoUrl?: string,
+  metadata?: any
 ) => {
   try {
     console.log("Saving regular activity:", activity.name);
@@ -70,7 +71,8 @@ export const saveRegularActivity = async (
       .insert({
         user_id: userId,
         activity_id: activity.id,
-        photo_url: photoUrl || null
+        photo_url: photoUrl || null,
+        photo_metadata: metadata || null
       });
 
     if (error) throw error;

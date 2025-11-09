@@ -15,7 +15,7 @@ export const useActivityClaim = (
     maxProgress: number;
     photoUrls: string[];
   }>,
-  saveClaimedActivity: (activity: Activity, photoUrl?: string) => Promise<boolean>,
+  saveClaimedActivity: (activity: Activity, photoUrl?: string, metadata?: any) => Promise<boolean>,
   refreshData: () => void
 ) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -68,7 +68,7 @@ export const useActivityClaim = (
     const currentProgress = progressiveActivities[activity.id]?.currentProgress || 0;
     const maxProgress = activity.progress_steps || 1;
     
-    openFileUploader(activity, async (photoUrl) => {
+    openFileUploader(activity, async (photoUrl, metadata) => {
       if (photoUrl) {
         try {
           console.log(`Processing activity: ${activity.name}`);
@@ -79,7 +79,7 @@ export const useActivityClaim = (
             console.log(`Handling progressive activity with photo: ${activity.name}`);
             
             // Call saveClaimedActivity which handles the progressive logic internally
-            const success = await saveClaimedActivity(activity, photoUrl);
+            const success = await saveClaimedActivity(activity, photoUrl, metadata);
             
             if (success) {
               // Calculate the new progress after this claim
@@ -97,7 +97,7 @@ export const useActivityClaim = (
             }
           } else {
             // For regular (non-progressive) activities with photo
-            await saveClaimedActivity(activity, photoUrl);
+            await saveClaimedActivity(activity, photoUrl, metadata);
             toast.success(`Du har klarat av "${activity.name}"! +${activity.points} poäng`);
             refreshData();
           }

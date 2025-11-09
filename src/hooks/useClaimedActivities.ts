@@ -55,7 +55,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     loadActivitiesData();
   }, [user, refreshTrigger, undoInProgress]);
 
-  const saveClaimedActivity = async (activity: Activity, photoUrl?: string) => {
+  const saveClaimedActivity = async (activity: Activity, photoUrl?: string, metadata?: any) => {
     if (!user) {
       toast.error("Du måste vara inloggad för att claima aktiviteter");
       return false;
@@ -90,7 +90,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
       
       // Handle regular activities
       console.log("Handling regular (non-progressive) activity");
-      return await saveRegularActivity(user.id, activity, photoUrl);
+      return await saveRegularActivity(user.id, activity, photoUrl, metadata);
     } catch (error: any) {
       console.error("Error saving claimed activity:", error);
       toast.error(`Kunde inte spara aktivitet: ${error.message}`);

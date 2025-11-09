@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { Activity } from '@/types';
 import { toast } from "@/components/ui/sonner";
 import { supabase } from '@/integrations/supabase/client';
-import { compressImage, validateImageFile } from '@/utils/imageCompression';
+import { compressImage, validateImageFile, extractImageMetadata, ImageMetadata } from '@/utils/imageCompression';
 
 interface UploadProgress {
   stage: 'validating' | 'compressing' | 'uploading' | 'completed' | 'error';
@@ -82,7 +82,7 @@ export const useEnhancedPhotoUpload = (userId: string | undefined) => {
     throw lastError || new Error('Upload failed after all retries');
   };
 
-  const uploadPhoto = async (file: File, activity: Activity): Promise<string | null> => {
+  const uploadPhoto = async (file: File, activity: Activity): Promise<{ url: string; metadata: ImageMetadata | null } | null> => {
     if (!userId) {
       toast.error("Du måste vara inloggad för att ladda upp foton");
       return null;
@@ -101,6 +101,9 @@ export const useEnhancedPhotoUpload = (userId: string | undefined) => {
         toast.error(validation.error || 'Ogiltig bildfil');
         return null;
       }
+
+      // Extract metadata BEFORE compression
+      const metadata = await extractImageMetadata(file);
 
       updateProgress('compressing', 20, 'Komprimerar bild...');
 
@@ -131,7 +134,7 @@ export const useEnhancedPhotoUpload = (userId: string | undefined) => {
       updateProgress('completed', 100, 'Uppladdning slutförd!');
       
       toast.success(`Bild uppladdad (${finalSizeKB} KB)`);
-      return publicUrl;
+      return { url: publicUrl, metadata };
 
     } catch (error: any) {
       console.error("Error uploading photo:", error);
@@ -161,7 +164,7 @@ export const useEnhancedPhotoUpload = (userId: string | undefined) => {
 
   const openFileUploader = (
     activity: Activity, 
-    onPhotoSelected: (photoUrl: string | null) => void
+    onPhotoSelected: (photoUrl: string | null, metadata?: ImageMetadata | null) => void
   ) => {
     // Create input element with better iOS compatibility
     const input = document.createElement('input');
@@ -191,8 +194,12 @@ export const useEnhancedPhotoUpload = (userId: string | undefined) => {
       
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        const photoUrl = await uploadPhoto(file, activity);
-        onPhotoSelected(photoUrl);
+        const result = await uploadPhoto(file, activity);
+        if (result) {
+          onPhotoSelected(result.url, result.metadata);
+        } else {
+          onPhotoSelected(null);
+        }
       } else {
         onPhotoSelected(null);
       }

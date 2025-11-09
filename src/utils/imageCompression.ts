@@ -1,8 +1,18 @@
+import exifr from 'exifr';
+
 export interface CompressionOptions {
   maxWidth?: number;
   maxHeight?: number;
   quality?: number;
   maxSizeKB?: number;
+}
+
+export interface ImageMetadata {
+  dateTaken?: string;
+  latitude?: number;
+  longitude?: number;
+  camera?: string;
+  originalFileName: string;
 }
 
 const DEFAULT_OPTIONS: Required<CompressionOptions> = {
@@ -98,4 +108,46 @@ export const getImageDimensions = (file: File): Promise<{ width: number; height:
     img.onerror = () => reject(new Error('Failed to load image dimensions'));
     img.src = URL.createObjectURL(file);
   });
+};
+
+export const extractImageMetadata = async (file: File): Promise<ImageMetadata | null> => {
+  try {
+    const exif = await exifr.parse(file, ['DateTimeOriginal', 'CreateDate', 'DateTime', 'latitude', 'longitude', 'Make', 'Model']);
+
+    if (!exif) {
+      return {
+        originalFileName: file.name,
+      };
+    }
+
+    const metadata: ImageMetadata = {
+      originalFileName: file.name,
+    };
+
+    // Extract date taken
+    if (exif.DateTimeOriginal || exif.CreateDate || exif.DateTime) {
+      const date = exif.DateTimeOriginal || exif.CreateDate || exif.DateTime;
+      metadata.dateTaken = date instanceof Date ? date.toISOString() : String(date);
+    }
+
+    // Extract GPS coordinates
+    if (exif.latitude && exif.longitude) {
+      metadata.latitude = exif.latitude;
+      metadata.longitude = exif.longitude;
+    }
+
+    // Extract camera info
+    if (exif.Make || exif.Model) {
+      const make = exif.Make || '';
+      const model = exif.Model || '';
+      metadata.camera = `${make} ${model}`.trim();
+    }
+
+    return metadata;
+  } catch (error) {
+    console.warn('Failed to extract EXIF metadata:', error);
+    return {
+      originalFileName: file.name,
+    };
+  }
 };
