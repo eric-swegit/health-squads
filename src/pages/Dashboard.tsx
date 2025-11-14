@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/sonner";
 import FeedList from '@/components/FeedList';
 import { useLeaderboardData } from '@/components/LeaderboardSummary';
+import { toZonedTime } from 'date-fns-tz';
 
 const Dashboard = () => {
   const [userName, setUserName] = useState('');
@@ -65,8 +66,10 @@ const Dashboard = () => {
   // Calculate days left in challenge
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const challengeEndDate = new Date('2025-12-02T23:59:59');
-      const now = new Date();
+      const timeZone = 'Europe/Stockholm';
+      // Challenge ends December 2, 2025 at 23:59:59 Swedish time (CET/CEST)
+      const challengeEndDate = toZonedTime(new Date('2025-12-02T23:59:59'), timeZone);
+      const now = toZonedTime(new Date(), timeZone);
       const diffTime = challengeEndDate.getTime() - now.getTime();
       
       if (diffTime > 0) {
