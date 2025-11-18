@@ -2,6 +2,7 @@
 import { toast } from "@/components/ui/sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { Activity } from '@/types';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export const fetchClaimedActivities = async (userId: string) => {
   try {
@@ -33,6 +34,9 @@ export const fetchProgressiveActivities = async (userId: string) => {
       
     if (progressError) throw progressError;
     
+    // Get today's date in Swedish timezone
+    const todaySE = formatInTimeZone(new Date(), 'Europe/Stockholm', 'yyyy-MM-dd');
+    
     // Set in-progress activities
     const progressMap: Record<string, {
       currentProgress: number;
@@ -41,13 +45,19 @@ export const fetchProgressiveActivities = async (userId: string) => {
     }> = {};
     
     if (progressData) {
-      progressData.forEach(item => {
-        progressMap[item.activity_id] = {
-          currentProgress: item.current_progress,
-          maxProgress: item.max_progress,
-          photoUrls: item.photo_urls || []
-        };
-      });
+      progressData
+        .filter(item => {
+          // Only show progress from today (Swedish time)
+          const updatedSE = formatInTimeZone(new Date(item.last_updated_at), 'Europe/Stockholm', 'yyyy-MM-dd');
+          return updatedSE === todaySE;
+        })
+        .forEach(item => {
+          progressMap[item.activity_id] = {
+            currentProgress: item.current_progress,
+            maxProgress: item.max_progress,
+            photoUrls: item.photo_urls || []
+          };
+        });
     }
     
     return progressMap;

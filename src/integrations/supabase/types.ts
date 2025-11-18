@@ -428,6 +428,7 @@ export type Database = {
         }[]
       }
       reset_daily_points_cron: { Args: never; Returns: undefined }
+      reset_progress_tracking_cron: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
