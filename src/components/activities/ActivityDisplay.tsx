@@ -18,6 +18,7 @@ interface ActivityDisplayProps {
   onClaim: (activity: Activity) => void;
   onInfo: (activity: Activity) => void;
   onUndo: (activityId: string) => void;
+  onReset?: (activityId: string) => void;
 }
 
 const ActivityDisplay = ({
@@ -29,7 +30,8 @@ const ActivityDisplay = ({
   error,
   onClaim,
   onInfo,
-  onUndo
+  onUndo,
+  onReset
 }: ActivityDisplayProps) => {
   return (
     <Card className="p-4">
@@ -52,6 +54,7 @@ const ActivityDisplay = ({
             onClaim={onClaim}
             onInfo={onInfo}
             onUndo={onUndo}
+            onReset={onReset}
           />
         )}
       </CardContent>

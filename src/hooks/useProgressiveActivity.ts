@@ -100,8 +100,31 @@ export const useProgressiveActivity = () => {
     }
   };
 
+  const resetProgressiveActivity = async (
+    userId: string,
+    activityId: string
+  ) => {
+    try {
+      // Delete the entire progress tracking record
+      const { error } = await supabase
+        .from('progress_tracking')
+        .delete()
+        .match({ user_id: userId, activity_id: activityId });
+        
+      if (error) throw error;
+      
+      toast.success("Aktivitetens framsteg har återställts");
+      return true;
+    } catch (error: any) {
+      console.error("Error resetting progressive activity:", error);
+      toast.error(`Kunde inte återställa aktivitet: ${error.message}`);
+      return false;
+    }
+  };
+
   return {
     handleProgressiveActivity,
-    undoProgressiveActivity
+    undoProgressiveActivity,
+    resetProgressiveActivity
   };
 };

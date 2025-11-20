@@ -18,6 +18,7 @@ interface CategorySectionProps {
   onClaim: (activity: Activity) => void;
   onInfo: (activity: Activity) => void;
   onUndo: (activityId: string) => void;
+  onReset?: (activityId: string) => void;
 }
 
 const CategorySection = ({ 
@@ -27,7 +28,8 @@ const CategorySection = ({
   progressiveActivities = {},
   onClaim, 
   onInfo,
-  onUndo
+  onUndo,
+  onReset
 }: CategorySectionProps) => {
   const [expanded, setExpanded] = useState(true);
   const isMobile = useIsMobile();
@@ -65,6 +67,7 @@ const CategorySection = ({
                 onClaim={onClaim}
                 onInfo={onInfo}
                 onUndo={onUndo}
+                onReset={onReset}
               />
             );
           })}

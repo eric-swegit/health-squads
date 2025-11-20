@@ -1,5 +1,6 @@
 
-import { Camera, Info, RotateCcw } from 'lucide-react';
+import { Camera, Info, RotateCcw, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -7,6 +8,16 @@ import { Activity } from '@/types';
 import { getActivityIcon, getActivityTitle, getActivityDuration } from './utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Progress } from '@/components/ui/progress';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -15,6 +26,7 @@ interface ActivityCardProps {
   onClaim: (activity: Activity) => void;
   onInfo: (activity: Activity) => void;
   onUndo: (activityId: string) => void;
+  onReset?: (activityId: string) => void;
 }
 
 const ActivityCard = ({ 
@@ -23,8 +35,10 @@ const ActivityCard = ({
   progress,
   onClaim, 
   onInfo, 
-  onUndo 
+  onUndo,
+  onReset
 }: ActivityCardProps) => {
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const ActivityIcon = getActivityIcon(activity.name);
   const title = getActivityTitle(activity.name);
   const duration = activity.duration || getActivityDuration(activity.name);
@@ -32,6 +46,18 @@ const ActivityCard = ({
   
   const isInProgress = !isClaimed && progress && progress.current > 0 && progress.current < progress.max;
   const progressPercentage = progress ? (progress.current / progress.max) * 100 : 0;
+  
+  const handleResetClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowResetDialog(true);
+  };
+
+  const handleResetConfirm = () => {
+    if (onReset) {
+      onReset(activity.id);
+    }
+    setShowResetDialog(false);
+  };
   
   return (
     <Card 
@@ -105,12 +131,41 @@ const ActivityCard = ({
           </div>
         )}
         
-        {/* In progress banner */}
+        {/* In progress banner with reset button */}
         {isInProgress && (
-          <div className="absolute bottom-0 inset-x-0 bg-blue-100/90 py-1 flex justify-center">
+          <div className="absolute bottom-0 inset-x-0 bg-blue-100/90 py-1 flex justify-center items-center gap-2">
             <span className="text-blue-700 text-xs font-medium">Pågående</span>
+            {onReset && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 px-2 text-xs"
+                onClick={handleResetClick}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Återställ
+              </Button>
+            )}
           </div>
         )}
+        
+        {/* Reset Confirmation Dialog */}
+        <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Återställ framsteg?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Är du säker på att du vill återställa framstegen för "{title}"? All progress kommer att tas bort.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Avbryt</AlertDialogCancel>
+              <AlertDialogAction onClick={handleResetConfirm}>
+                Ja, återställ
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         
         {/* Points in bottom right */}
         <div className="absolute bottom-1 right-1">
