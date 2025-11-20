@@ -16,6 +16,7 @@ interface ActivityCategoriesProps {
   onClaim: (activity: Activity) => void;
   onInfo: (activity: Activity) => void;
   onUndo: (activityId: string) => void;
+  onReset?: (activityId: string) => void;
 }
 
 const ActivityCategories = ({ 
@@ -25,7 +26,8 @@ const ActivityCategories = ({
   progressiveActivities = {},
   onClaim, 
   onInfo, 
-  onUndo 
+  onUndo,
+  onReset
 }: ActivityCategoriesProps) => {
   const groupedActivities = groupActivitiesByCategory(activities);
   const hasAnyActivities = activities.length > 0;
@@ -43,6 +45,7 @@ const ActivityCategories = ({
           onClaim={onClaim}
           onInfo={onInfo}
           onUndo={onUndo}
+          onReset={onReset}
         />
       ))}
       

@@ -21,6 +21,7 @@ export const useActivities = () => {
     progressiveActivities,
     saveClaimedActivity,
     undoClaimActivity,
+    resetProgressActivity,
     error: claimedError
   } = useClaimedActivities(user, lastRefresh);
 
@@ -41,6 +42,7 @@ export const useActivities = () => {
     user,
     saveClaimedActivity,
     undoClaimActivity,
+    resetProgressActivity,
     refreshData
   };
 };

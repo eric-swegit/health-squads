@@ -25,11 +25,20 @@ const ActivityList = () => {
     user,
     saveClaimedActivity,
     undoClaimActivity,
+    resetProgressActivity,
     refreshData
   } = useActivities();
 
   // Hook for handling undo claim functionality
   const { handleUndoClaim } = useUndoClaim(undoClaimActivity, refreshData);
+
+  // Hook for handling reset functionality
+  const handleResetProgress = async (activityId: string) => {
+    const success = await resetProgressActivity(activityId);
+    if (success) {
+      refreshData();
+    }
+  };
 
   // Hook for handling claim functionality
   const {
@@ -75,6 +84,7 @@ const ActivityList = () => {
           setInfoOpen(true);
         }}
         onUndo={handleUndoClaim}
+        onReset={handleResetProgress}
       />
 
       {/* Info Dialog */}

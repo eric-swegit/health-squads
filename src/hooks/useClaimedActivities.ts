@@ -22,7 +22,7 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
   const [error, setError] = useState<string | null>(null);
   const [undoInProgress, setUndoInProgress] = useState<string | null>(null);
   
-  const { handleProgressiveActivity, undoProgressiveActivity } = useProgressiveActivity();
+  const { handleProgressiveActivity, undoProgressiveActivity, resetProgressiveActivity } = useProgressiveActivity();
 
   useEffect(() => {
     const loadActivitiesData = async () => {
@@ -167,11 +167,31 @@ export const useClaimedActivities = (user: { id: string } | null, refreshTrigger
     }
   };
 
+  const resetProgressActivity = async (activityId: string) => {
+    if (!user) {
+      toast.error("Du måste vara inloggad för att återställa en aktivitet");
+      return false;
+    }
+
+    try {
+      setUndoInProgress(activityId);
+      const result = await resetProgressiveActivity(user.id, activityId);
+      return result;
+    } catch (error: any) {
+      console.error("Error resetting progressive activity:", error);
+      toast.error(`Kunde inte återställa aktivitet: ${error.message}`);
+      return false;
+    } finally {
+      setUndoInProgress(null);
+    }
+  };
+
   return {
     claimedToday,
     progressiveActivities,
     saveClaimedActivity,
     undoClaimActivity,
+    resetProgressActivity,
     loading,
     error
   };
