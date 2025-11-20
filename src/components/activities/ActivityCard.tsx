@@ -72,7 +72,7 @@ const ActivityCard = ({
     >
       <CardContent className="p-2 flex flex-col justify-between h-full relative">
         {/* Info button in top right */}
-        <div className="absolute top-0 right-0 p-1">
+        <div className="absolute top-0 right-0 p-1 z-10">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild onClick={(e) => {
@@ -93,6 +93,28 @@ const ActivityCard = ({
             </Tooltip>
           </TooltipProvider>
         </div>
+
+        {/* Reset button in top left for in-progress activities */}
+        {isInProgress && onReset && (
+          <div className="absolute top-0 left-0 p-1 z-10">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild onClick={handleResetClick}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 rounded-full bg-orange-50 hover:bg-orange-100"
+                  >
+                    <RefreshCw className="h-3 w-3 text-orange-600" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Återställ</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
         
         {/* Icon in center */}
         <div className="flex flex-col items-center justify-center flex-1">
@@ -131,21 +153,10 @@ const ActivityCard = ({
           </div>
         )}
         
-        {/* In progress banner with reset button */}
+        {/* In progress banner */}
         {isInProgress && (
-          <div className="absolute bottom-0 inset-x-0 bg-blue-100/90 py-1 flex justify-center items-center gap-2">
+          <div className="absolute bottom-0 inset-x-0 bg-blue-100/90 py-1 flex justify-center">
             <span className="text-blue-700 text-xs font-medium">Pågående</span>
-            {onReset && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 px-2 text-xs"
-                onClick={handleResetClick}
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Återställ
-              </Button>
-            )}
           </div>
         )}
         
