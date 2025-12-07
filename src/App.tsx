@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ActivityPage from "./pages/ActivityPage";
 import ProfilePage from "./pages/ProfilePage";
+import WrappedPage from "./pages/WrappedPage";
 import NavBar from "./components/NavBar";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,14 @@ const App = () => {
                 element={
                   <PrivateRoute>
                     <ProfilePage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/wrapped"
+                element={
+                  <PrivateRoute>
+                    <WrappedPage />
                   </PrivateRoute>
                 }
               />

@@ -285,28 +285,37 @@ export type Database = {
           created_at: string
           daily_points: number
           email: string
+          gratitude_summary: string | null
+          gratitude_summary_updated_at: string | null
           id: string
           name: string
           profile_image_url: string | null
           total_points: number
+          wrapped_generated_at: string | null
         }
         Insert: {
           created_at?: string
           daily_points?: number
           email: string
+          gratitude_summary?: string | null
+          gratitude_summary_updated_at?: string | null
           id: string
           name: string
           profile_image_url?: string | null
           total_points?: number
+          wrapped_generated_at?: string | null
         }
         Update: {
           created_at?: string
           daily_points?: number
           email?: string
+          gratitude_summary?: string | null
+          gratitude_summary_updated_at?: string | null
           id?: string
           name?: string
           profile_image_url?: string | null
           total_points?: number
+          wrapped_generated_at?: string | null
         }
         Relationships: []
       }
@@ -403,10 +412,13 @@ export type Database = {
           created_at: string
           daily_points: number
           email: string
+          gratitude_summary: string | null
+          gratitude_summary_updated_at: string | null
           id: string
           name: string
           profile_image_url: string | null
           total_points: number
+          wrapped_generated_at: string | null
         }[]
         SetofOptions: {
           from: "*"
