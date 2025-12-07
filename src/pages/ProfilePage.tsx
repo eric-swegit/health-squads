@@ -1,15 +1,17 @@
 
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Gift } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/sonner";
 import { useProfileData } from '@/hooks/useProfileData';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileStats from '@/components/profile/ProfileStats';
 import ActivityHistory from '@/components/profile/ActivityHistory';
+import GratitudeSection from '@/components/profile/GratitudeSection';
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { profile, stats, loading, uploadingImage, setUploadingImage } = useProfileData();
 
   const handleLogout = async () => {
@@ -46,6 +48,17 @@ const ProfilePage = () => {
         />
         
         <ProfileStats stats={stats} />
+
+        {/* Wrapped Button */}
+        <Button
+          onClick={() => navigate('/wrapped')}
+          className="w-full mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+        >
+          <Gift className="h-4 w-4 mr-2" />
+          Se din HealthSquad Wrapped 2025
+        </Button>
+        
+        <GratitudeSection />
         
         <ActivityHistory />
       </div>

@@ -1,6 +1,18 @@
-
+project_id = "cbypedcyszozqezowbbo"
 
 [functions]
+
+[functions.summarize-gratitude]
+verify_jwt = true
+
+[functions.generate-wrapped]
+verify_jwt = true
+
+[functions.daily-reminder]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
 
 [realtime]
 enabled = true
@@ -19,4 +31,3 @@ enabled = true
 
 [realtime.tables.comment_likes]
 enabled = true
-
