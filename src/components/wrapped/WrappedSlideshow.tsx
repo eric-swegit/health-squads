@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface WrappedSlideshowProps {
@@ -42,7 +42,10 @@ const WrappedSlideshow = ({ photos }: WrappedSlideshowProps) => {
         <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6">
           <ImageIcon className="h-10 w-10 text-white/50" />
         </div>
-        <h2 className="text-2xl font-bold mb-4">Dina minnen 📸</h2>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <ImageIcon className="h-6 w-6" />
+          <h2 className="text-2xl font-bold">Dina minnen</h2>
+        </div>
         <p className="text-white/70">
           Ladda upp bilder till dina aktiviteter för att se dem här!
         </p>
@@ -52,20 +55,20 @@ const WrappedSlideshow = ({ photos }: WrappedSlideshowProps) => {
 
   return (
     <div className="text-center text-white w-full max-w-md">
-      <h2
-        className={`text-2xl font-bold mb-6 transition-all duration-700 ${
+      <div
+        className={`flex items-center justify-center gap-2 mb-6 transition-all duration-700 ${
           animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        Dina minnen 📸
-      </h2>
+        <ImageIcon className="h-6 w-6" />
+        <h2 className="text-2xl font-bold">Dina minnen</h2>
+      </div>
 
       <div
         className={`relative transition-all duration-700 delay-200 ${
           animate ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
         }`}
       >
-        {/* Main image */}
         <div className="relative aspect-square rounded-2xl overflow-hidden bg-black/20">
           <img
             src={photos[currentIndex]}
@@ -77,7 +80,6 @@ const WrappedSlideshow = ({ photos }: WrappedSlideshowProps) => {
             }}
           />
 
-          {/* Navigation arrows */}
           {photos.length > 1 && (
             <>
               <Button
@@ -99,7 +101,6 @@ const WrappedSlideshow = ({ photos }: WrappedSlideshowProps) => {
             </>
           )}
 
-          {/* Progress bar */}
           {photos.length > 1 && (
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
               <div
@@ -110,12 +111,10 @@ const WrappedSlideshow = ({ photos }: WrappedSlideshowProps) => {
           )}
         </div>
 
-        {/* Photo count */}
         <p className="mt-4 text-white/70 text-sm">
           {currentIndex + 1} av {photos.length} bilder
         </p>
 
-        {/* Thumbnail preview */}
         {photos.length > 1 && (
           <div className="flex justify-center gap-2 mt-4 overflow-x-auto pb-2">
             {photos.slice(0, 10).map((photo, index) => (
