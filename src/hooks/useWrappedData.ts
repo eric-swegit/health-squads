@@ -7,8 +7,8 @@ export interface WrappedStats {
   totalPoints: number;
   longestStreak: number;
   daysActive: number;
-  topActivities: Array<{ name: string; count: number; emoji: string }>;
-  achievements: Array<{ id: string; title: string; description: string; emoji: string }>;
+  topActivities: Array<{ name: string; count: number; iconType: string }>;
+  achievements: Array<{ id: string; title: string; description: string; iconType: string }>;
   gratitudeSummary: string | null;
   gratitudeCount: number;
   photos: string[];

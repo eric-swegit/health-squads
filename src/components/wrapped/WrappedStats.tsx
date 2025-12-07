@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Flame, Calendar, Trophy } from 'lucide-react';
+import { Activity, Flame, Calendar, Trophy, BarChart3 } from 'lucide-react';
 
 interface WrappedStatsProps {
   totalActivities: number;
@@ -25,13 +25,14 @@ const WrappedStats = ({ totalActivities, totalPoints, longestStreak, daysActive 
 
   return (
     <div className="text-center text-white w-full max-w-md">
-      <h2
-        className={`text-2xl font-bold mb-8 transition-all duration-700 ${
+      <div
+        className={`flex items-center justify-center gap-2 mb-8 transition-all duration-700 ${
           animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        Din statistik 📊
-      </h2>
+        <BarChart3 className="h-6 w-6" />
+        <h2 className="text-2xl font-bold">Din statistik</h2>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         {stats.map((stat, index) => (

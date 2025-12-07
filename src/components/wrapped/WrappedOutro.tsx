@@ -1,18 +1,64 @@
-import { useEffect, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Sparkles, PartyPopper } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 interface WrappedOutroProps {
   userName: string;
   totalPoints: number;
+  onCelebration?: () => void;
 }
 
-const WrappedOutro = ({ userName, totalPoints }: WrappedOutroProps) => {
+const WrappedOutro = ({ userName, totalPoints, onCelebration }: WrappedOutroProps) => {
   const [animate, setAnimate] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimate(true), 100);
-    return () => clearTimeout(timer);
+  const fireConfetti = useCallback(() => {
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    const colors = ['#ec4899', '#8b5cf6', '#3b82f6', '#f59e0b', '#10b981'];
+
+    const frame = () => {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.7 },
+        colors,
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.7 },
+        colors,
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+
+    // Initial burst
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors,
+    });
+
+    frame();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimate(true);
+      fireConfetti();
+      if (onCelebration) {
+        onCelebration();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [fireConfetti, onCelebration]);
 
   return (
     <div className="text-center text-white">
@@ -26,13 +72,14 @@ const WrappedOutro = ({ userName, totalPoints }: WrappedOutroProps) => {
         </div>
       </div>
 
-      <h2
-        className={`text-3xl font-bold mb-4 transition-all duration-1000 delay-300 ${
+      <div
+        className={`flex items-center justify-center gap-2 mb-4 transition-all duration-1000 delay-300 ${
           animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        Bra jobbat, {userName.split(' ')[0]}! 🎉
-      </h2>
+        <h2 className="text-3xl font-bold">Bra jobbat, {userName.split(' ')[0]}!</h2>
+        <PartyPopper className="h-7 w-7" />
+      </div>
 
       <p
         className={`text-xl text-white/80 mb-8 transition-all duration-1000 delay-500 ${
@@ -47,12 +94,13 @@ const WrappedOutro = ({ userName, totalPoints }: WrappedOutroProps) => {
           animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <p className="text-lg mb-4">
-          Tack för att du varit en del av HealthSquad! 💪
-        </p>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <p className="text-lg">Tack för att du varit en del av HealthSquad!</p>
+          <Dumbbell className="h-5 w-5" />
+        </div>
         <p className="text-sm text-white/70">
           Fortsätt att ta hand om dig själv och inspirera andra. 
-          Vi ses nästa gång! 🌟
+          Vi ses nästa gång!
         </p>
       </div>
 
@@ -66,5 +114,8 @@ const WrappedOutro = ({ userName, totalPoints }: WrappedOutroProps) => {
     </div>
   );
 };
+
+// Need to import this for the component
+import { Dumbbell } from 'lucide-react';
 
 export default WrappedOutro;

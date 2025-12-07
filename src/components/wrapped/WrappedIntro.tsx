@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ChevronRight } from 'lucide-react';
 
 interface WrappedIntroProps {
   userName: string;
@@ -51,13 +52,14 @@ const WrappedIntro = ({ userName, profileImage }: WrappedIntroProps) => {
         </h2>
       </div>
 
-      <p
-        className={`text-white/60 mt-8 transition-all duration-1000 delay-700 ${
+      <div
+        className={`flex items-center justify-center gap-2 text-white/60 mt-8 transition-all duration-1000 delay-700 ${
           animate ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        Svep för att se din resa 👉
-      </p>
+        <span>Svep för att se din resa</span>
+        <ChevronRight className="h-5 w-5 animate-pulse" />
+      </div>
     </div>
   );
 };

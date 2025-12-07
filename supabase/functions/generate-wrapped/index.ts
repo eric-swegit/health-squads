@@ -6,9 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Competition start date
-const COMPETITION_START = '2025-11-02';
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,7 +25,7 @@ serve(async (req) => {
       .eq('id', userId)
       .single();
 
-    // Get all claimed activities since competition start
+    // Get ALL claimed activities for the whole year (2025)
     const { data: claimedActivities } = await supabase
       .from('claimed_activities')
       .select(`
@@ -46,14 +43,15 @@ serve(async (req) => {
         )
       `)
       .eq('user_id', userId)
-      .gte('created_at', COMPETITION_START)
+      .gte('created_at', '2025-01-01')
       .order('date', { ascending: true });
 
-    // Get gratitude entries count
+    // Get gratitude entries count for the whole year
     const { count: gratitudeCount } = await supabase
       .from('gratitude_entries')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .gte('created_at', '2025-01-01');
 
     if (!claimedActivities || claimedActivities.length === 0) {
       return new Response(
@@ -115,26 +113,18 @@ serve(async (req) => {
       }
     });
 
-    // Get top 5 activities
-    const getActivityEmoji = (type: string, name: string): string => {
-      const emojiMap: Record<string, string> = {
-        'vatten': '💧',
-        'träning': '💪',
-        'steg': '👟',
-        'sömn': '😴',
-        'kost': '🥗',
-        'mindfulness': '🧘',
-      };
-      if (name.toLowerCase().includes('vatten')) return '💧';
-      if (name.toLowerCase().includes('frukt') || name.toLowerCase().includes('grönsak')) return '🥗';
-      if (name.toLowerCase().includes('vegetarisk')) return '🥬';
-      if (name.toLowerCase().includes('gym')) return '🏋️';
-      if (name.toLowerCase().includes('hemmaträning')) return '🏠';
-      if (name.toLowerCase().includes('steg')) return '👟';
-      if (name.toLowerCase().includes('sömn')) return '😴';
-      if (name.toLowerCase().includes('tacksamhet')) return '🙏';
-      if (name.toLowerCase().includes('mindfulness') || name.toLowerCase().includes('andning')) return '🧘';
-      return emojiMap[type] || '✨';
+    // Get icon type based on activity name
+    const getActivityIconType = (type: string, name: string): string => {
+      const nameLower = name.toLowerCase();
+      if (nameLower.includes('vatten')) return 'water';
+      if (nameLower.includes('frukt') || nameLower.includes('grönsak') || nameLower.includes('vegetarisk')) return 'food';
+      if (nameLower.includes('gym')) return 'gym';
+      if (nameLower.includes('hemmaträning')) return 'home';
+      if (nameLower.includes('steg')) return 'steps';
+      if (nameLower.includes('sömn')) return 'sleep';
+      if (nameLower.includes('tacksamhet')) return 'gratitude';
+      if (nameLower.includes('mindfulness') || nameLower.includes('andning')) return 'mindfulness';
+      return 'default';
     };
 
     const topActivities = Object.entries(activityCounts)
@@ -143,18 +133,18 @@ serve(async (req) => {
       .map(([name, data]) => ({
         name,
         count: data.count,
-        emoji: getActivityEmoji(data.type, name)
+        iconType: getActivityIconType(data.type, name)
       }));
 
-    // Generate achievements
-    const achievements: Array<{ id: string; title: string; description: string; emoji: string }> = [];
+    // Generate achievements with icon types
+    const achievements: Array<{ id: string; title: string; description: string; iconType: string }> = [];
 
     if (longestStreak >= 7) {
       achievements.push({
         id: 'streak_7',
         title: 'Veckostreak!',
         description: `Du hade en streak på ${longestStreak} dagar i rad`,
-        emoji: '🔥'
+        iconType: 'streak'
       });
     }
 
@@ -163,7 +153,7 @@ serve(async (req) => {
         id: 'activities_50',
         title: 'Aktivitetsmaskin',
         description: `Du loggade ${totalActivities} aktiviteter`,
-        emoji: '🚀'
+        iconType: 'activities'
       });
     }
 
@@ -172,7 +162,7 @@ serve(async (req) => {
         id: 'points_100',
         title: 'Poängjägare',
         description: `Du samlade ${totalPoints} poäng`,
-        emoji: '🏆'
+        iconType: 'points'
       });
     }
 
@@ -181,7 +171,7 @@ serve(async (req) => {
         id: 'gratitude_10',
         title: 'Tacksamhetsmästare',
         description: `Du skrev ner ${gratitudeCount} tacksamhetsposter`,
-        emoji: '🙏'
+        iconType: 'gratitude'
       });
     }
 
@@ -195,7 +185,7 @@ serve(async (req) => {
         id: 'water_20',
         title: 'Hydreringshjälte',
         description: `Du loggade vatten ${waterActivities.length} gånger`,
-        emoji: '💧'
+        iconType: 'water'
       });
     }
 
@@ -209,7 +199,7 @@ serve(async (req) => {
         id: 'workout_10',
         title: 'Träningsentusiast',
         description: `Du tränade ${workoutActivities.length} gånger`,
-        emoji: '💪'
+        iconType: 'workout'
       });
     }
 
@@ -244,7 +234,7 @@ serve(async (req) => {
       achievements,
       gratitudeSummary: profile?.gratitude_summary || null,
       gratitudeCount: gratitudeCount || 0,
-      photos: photos.slice(0, 50), // Limit to 50 photos
+      photos: photos.slice(0, 50),
       userName: profile?.name || 'Användare',
       profileImage: profile?.profile_image_url || null,
     };

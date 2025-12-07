@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useWrappedData } from '@/hooks/useWrappedData';
 import { useWrappedAudio } from '@/hooks/useWrappedAudio';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Share2, Volume2, VolumeX } from 'lucide-react';
 import WrappedIntro from '@/components/wrapped/WrappedIntro';
@@ -12,7 +13,6 @@ import WrappedAchievements from '@/components/wrapped/WrappedAchievements';
 import WrappedGratitude from '@/components/wrapped/WrappedGratitude';
 import WrappedSlideshow from '@/components/wrapped/WrappedSlideshow';
 import WrappedOutro from '@/components/wrapped/WrappedOutro';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type SlideType = 'intro' | 'stats' | 'top-activities' | 'achievements' | 'gratitude' | 'slideshow' | 'outro';
 
@@ -23,7 +23,16 @@ const WrappedPage = () => {
   const { user } = useAuth();
   const { data, loading, generateWrapped } = useWrappedData(user?.id);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { isPlaying, isMuted, fadeIn, fadeOut, toggleMute, playTransitionSound } = useWrappedAudio();
+  const { 
+    isPlaying, 
+    isMuted, 
+    fadeIn, 
+    fadeOut, 
+    toggleMute, 
+    playTransitionSound,
+    playAchievementSound,
+    playCelebrationSound
+  } = useWrappedAudio();
 
   useEffect(() => {
     if (user?.id) {
@@ -45,26 +54,32 @@ const WrappedPage = () => {
     };
   }, [fadeOut]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentSlide < SLIDES.length - 1) {
       playTransitionSound();
       setCurrentSlide(prev => prev + 1);
     }
-  };
+  }, [currentSlide, playTransitionSound]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (currentSlide > 0) {
       playTransitionSound();
       setCurrentSlide(prev => prev - 1);
     }
-  };
+  }, [currentSlide, playTransitionSound]);
+
+  // Swipe navigation
+  const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrev,
+  });
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Min HealthSquad Wrapped 2025',
-          text: `Jag loggade ${data?.totalActivities} aktiviteter och samlade ${data?.totalPoints} poäng! 💪`,
+          text: `Jag loggade ${data?.totalActivities} aktiviteter och samlade ${data?.totalPoints} poäng!`,
           url: window.location.href,
         });
       } catch (err) {
@@ -113,7 +128,12 @@ const WrappedPage = () => {
       case 'top-activities':
         return <WrappedTopActivities activities={data.topActivities} />;
       case 'achievements':
-        return <WrappedAchievements achievements={data.achievements} />;
+        return (
+          <WrappedAchievements 
+            achievements={data.achievements} 
+            onAchievementReveal={playAchievementSound}
+          />
+        );
       case 'gratitude':
         return (
           <WrappedGratitude
@@ -124,14 +144,24 @@ const WrappedPage = () => {
       case 'slideshow':
         return <WrappedSlideshow photos={data.photos} />;
       case 'outro':
-        return <WrappedOutro userName={data.userName} totalPoints={data.totalPoints} />;
+        return (
+          <WrappedOutro 
+            userName={data.userName} 
+            totalPoints={data.totalPoints}
+            onCelebration={playCelebrationSound}
+          />
+        );
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 relative overflow-hidden">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 relative overflow-hidden touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl" />
@@ -181,7 +211,10 @@ const WrappedPage = () => {
         {SLIDES.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentSlide(index)}
+            onClick={() => {
+              playTransitionSound();
+              setCurrentSlide(index);
+            }}
             className={`w-2 h-2 rounded-full transition-all ${
               index === currentSlide ? 'bg-white w-6' : 'bg-white/40'
             }`}

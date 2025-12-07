@@ -14,7 +14,6 @@ const WrappedGratitude = ({ count, summary }: WrappedGratitudeProps) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Try to parse the summary if it's JSON
   let parsedSummary: { summary?: string; themes?: string[]; insight?: string } | null = null;
   if (summary) {
     try {
@@ -36,13 +35,13 @@ const WrappedGratitude = ({ count, summary }: WrappedGratitudeProps) => {
         </div>
       </div>
 
-      <h2
-        className={`text-2xl font-bold mb-2 transition-all duration-700 delay-200 ${
+      <div
+        className={`flex items-center justify-center gap-2 mb-2 transition-all duration-700 delay-200 ${
           animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        Tacksamhet 🙏
-      </h2>
+        <h2 className="text-2xl font-bold">Tacksamhet</h2>
+      </div>
 
       <p
         className={`text-5xl font-black mb-4 bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent transition-all duration-700 delay-300 ${
