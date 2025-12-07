@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useWrappedData } from '@/hooks/useWrappedData';
+import { useWrappedAudio } from '@/hooks/useWrappedAudio';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Share2 } from 'lucide-react';
+import { ArrowLeft, Share2, Volume2, VolumeX } from 'lucide-react';
 import WrappedIntro from '@/components/wrapped/WrappedIntro';
 import WrappedStats from '@/components/wrapped/WrappedStats';
 import WrappedTopActivities from '@/components/wrapped/WrappedTopActivities';
@@ -22,6 +23,7 @@ const WrappedPage = () => {
   const { user } = useAuth();
   const { data, loading, generateWrapped } = useWrappedData(user?.id);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { isPlaying, isMuted, fadeIn, fadeOut, toggleMute, playTransitionSound } = useWrappedAudio();
 
   useEffect(() => {
     if (user?.id) {
@@ -29,14 +31,30 @@ const WrappedPage = () => {
     }
   }, [user?.id, generateWrapped]);
 
+  // Start music when data loads
+  useEffect(() => {
+    if (data && !isPlaying) {
+      fadeIn(2000);
+    }
+  }, [data, isPlaying, fadeIn]);
+
+  // Fade out when leaving
+  useEffect(() => {
+    return () => {
+      fadeOut(500);
+    };
+  }, [fadeOut]);
+
   const handleNext = () => {
     if (currentSlide < SLIDES.length - 1) {
+      playTransitionSound();
       setCurrentSlide(prev => prev + 1);
     }
   };
 
   const handlePrev = () => {
     if (currentSlide > 0) {
+      playTransitionSound();
       setCurrentSlide(prev => prev - 1);
     }
   };
@@ -131,16 +149,26 @@ const WrappedPage = () => {
         >
           <ArrowLeft className="h-6 w-6" />
         </Button>
-        {SLIDES[currentSlide] === 'outro' && (
+        <div className="flex gap-2">
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleShare}
+            onClick={toggleMute}
             className="text-white hover:bg-white/10"
           >
-            <Share2 className="h-6 w-6" />
+            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
           </Button>
-        )}
+          {SLIDES[currentSlide] === 'outro' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShare}
+              className="text-white hover:bg-white/10"
+            >
+              <Share2 className="h-6 w-6" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Slide content */}
