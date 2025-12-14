@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useWrappedData } from '@/hooks/useWrappedData';
 import { useWrappedAudio } from '@/hooks/useWrappedAudio';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Share2, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Share2, Volume2, VolumeX, Play } from 'lucide-react';
 import WrappedIntro from '@/components/wrapped/WrappedIntro';
 import WrappedStats from '@/components/wrapped/WrappedStats';
 import WrappedTopActivities from '@/components/wrapped/WrappedTopActivities';
@@ -23,8 +23,12 @@ const WrappedPage = () => {
   const { user } = useAuth();
   const { data, loading, generateWrapped } = useWrappedData(user?.id);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+  const [hasStarted, setHasStarted] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const { 
-    isPlaying, 
     isMuted, 
     fadeIn, 
     fadeOut, 
@@ -40,13 +44,6 @@ const WrappedPage = () => {
     }
   }, [user?.id, generateWrapped]);
 
-  // Start music when data loads
-  useEffect(() => {
-    if (data && !isPlaying) {
-      fadeIn(2000);
-    }
-  }, [data, isPlaying, fadeIn]);
-
   // Fade out when leaving
   useEffect(() => {
     return () => {
@@ -54,24 +51,42 @@ const WrappedPage = () => {
     };
   }, [fadeOut]);
 
+  const handleStart = useCallback(() => {
+    setHasStarted(true);
+    fadeIn(2000);
+  }, [fadeIn]);
+
+  const transitionToSlide = useCallback((newSlide: number, direction: 'left' | 'right') => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setSlideDirection(direction);
+    playTransitionSound();
+    
+    setTimeout(() => {
+      setCurrentSlide(newSlide);
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150);
+  }, [isTransitioning, playTransitionSound]);
+
   const handleNext = useCallback(() => {
     if (currentSlide < SLIDES.length - 1) {
-      playTransitionSound();
-      setCurrentSlide(prev => prev + 1);
+      transitionToSlide(currentSlide + 1, 'left');
     }
-  }, [currentSlide, playTransitionSound]);
+  }, [currentSlide, transitionToSlide]);
 
   const handlePrev = useCallback(() => {
     if (currentSlide > 0) {
-      playTransitionSound();
-      setCurrentSlide(prev => prev - 1);
+      transitionToSlide(currentSlide - 1, 'right');
     }
-  }, [currentSlide, playTransitionSound]);
+  }, [currentSlide, transitionToSlide]);
 
   // Swipe navigation
   const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrev,
+    threshold: 30,
   });
 
   const handleShare = async () => {
@@ -106,6 +121,30 @@ const WrappedPage = () => {
           <p className="text-xl mb-4">Kunde inte ladda din Wrapped</p>
           <Button onClick={() => navigate('/profile')} variant="outline">
             Tillbaka till profilen
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Start screen - requires user interaction to enable audio
+  if (!hasStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 flex items-center justify-center p-4">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
+        </div>
+        <div className="text-center text-white relative z-10">
+          <h1 className="text-4xl font-bold mb-4">HealthSquad Wrapped</h1>
+          <p className="text-white/70 mb-8">Din personliga årssammanfattning 2025</p>
+          <Button 
+            onClick={handleStart}
+            size="lg"
+            className="bg-white text-purple-900 hover:bg-white/90 gap-2"
+          >
+            <Play className="h-5 w-5" />
+            Starta
           </Button>
         </div>
       </div>
@@ -158,7 +197,8 @@ const WrappedPage = () => {
 
   return (
     <div 
-      className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 relative overflow-hidden touch-pan-y"
+      ref={containerRef}
+      className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 relative overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -201,8 +241,16 @@ const WrappedPage = () => {
         </div>
       </div>
 
-      {/* Slide content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6 pt-20 pb-24">
+      {/* Slide content with smooth transitions */}
+      <div 
+        className={`relative z-10 min-h-screen flex flex-col items-center justify-center p-6 pt-20 pb-24 transition-all duration-300 ease-out ${
+          isTransitioning 
+            ? slideDirection === 'left' 
+              ? 'opacity-0 translate-x-[-30px]' 
+              : 'opacity-0 translate-x-[30px]'
+            : 'opacity-100 translate-x-0'
+        }`}
+      >
         {renderSlide()}
       </div>
 
@@ -212,11 +260,12 @@ const WrappedPage = () => {
           <button
             key={index}
             onClick={() => {
-              playTransitionSound();
-              setCurrentSlide(index);
+              if (index !== currentSlide) {
+                transitionToSlide(index, index > currentSlide ? 'left' : 'right');
+              }
             }}
-            className={`w-2 h-2 rounded-full transition-all ${
-              index === currentSlide ? 'bg-white w-6' : 'bg-white/40'
+            className={`h-2 rounded-full transition-all duration-300 ${
+              index === currentSlide ? 'bg-white w-6' : 'bg-white/40 w-2'
             }`}
           />
         ))}
@@ -227,7 +276,7 @@ const WrappedPage = () => {
         <Button
           variant="ghost"
           onClick={handlePrev}
-          disabled={currentSlide === 0}
+          disabled={currentSlide === 0 || isTransitioning}
           className="text-white hover:bg-white/10 disabled:opacity-0"
         >
           Föregående
@@ -235,7 +284,7 @@ const WrappedPage = () => {
         <Button
           variant="ghost"
           onClick={handleNext}
-          disabled={currentSlide === SLIDES.length - 1}
+          disabled={currentSlide === SLIDES.length - 1 || isTransitioning}
           className="text-white hover:bg-white/10 disabled:opacity-0"
         >
           Nästa
