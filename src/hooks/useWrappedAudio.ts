@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState } from 'react';
 
 const MUSIC_URL = 'https://cdn.pixabay.com/audio/2024/11/04/audio_bbd9d1a5c6.mp3';
 const WHOOSH_URL = 'https://cdn.pixabay.com/audio/2022/03/10/audio_8cb749a495.mp3';
@@ -14,54 +14,60 @@ export const useWrappedAudio = () => {
   const isMutedRef = useRef(false);
 
   // Keep ref in sync with state
-  useEffect(() => {
-    isMutedRef.current = isMuted;
-  }, [isMuted]);
-
-  useEffect(() => {
-    const audio = new Audio(MUSIC_URL);
-    audio.loop = true;
-    audio.volume = 0;
-    audioRef.current = audio;
-
-    return () => {
-      if (fadeIntervalRef.current) {
-        clearInterval(fadeIntervalRef.current);
-      }
-      audio.pause();
-      audio.src = '';
-    };
+  const updateMutedRef = useCallback((muted: boolean) => {
+    isMutedRef.current = muted;
   }, []);
 
   const fadeIn = useCallback((duration: number = 2000) => {
+    // Create audio element on user interaction to satisfy autoplay policy
+    if (!audioRef.current) {
+      const audio = new Audio(MUSIC_URL);
+      audio.loop = true;
+      audio.volume = 0;
+      audio.preload = 'auto';
+      audioRef.current = audio;
+    }
+    
     const audio = audioRef.current;
-    if (!audio) return;
 
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
     }
 
     audio.volume = 0;
-    audio.play().catch(console.log);
-    setIsPlaying(true);
+    
+    // Play with user gesture - this should work
+    const playPromise = audio.play();
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+          
+          const targetVolume = 0.3;
+          const steps = 20;
+          const stepDuration = duration / steps;
+          const volumeStep = targetVolume / steps;
+          let currentStep = 0;
 
-    const targetVolume = 0.3;
-    const steps = 20;
-    const stepDuration = duration / steps;
-    const volumeStep = targetVolume / steps;
-    let currentStep = 0;
+          fadeIntervalRef.current = setInterval(() => {
+            currentStep++;
+            const newVolume = Math.min(volumeStep * currentStep, targetVolume);
+            audio.volume = isMutedRef.current ? 0 : newVolume;
 
-    fadeIntervalRef.current = setInterval(() => {
-      currentStep++;
-      const newVolume = Math.min(volumeStep * currentStep, targetVolume);
-      audio.volume = isMutedRef.current ? 0 : newVolume;
-
-      if (currentStep >= steps) {
-        if (fadeIntervalRef.current) {
-          clearInterval(fadeIntervalRef.current);
-        }
-      }
-    }, stepDuration);
+            if (currentStep >= steps) {
+              if (fadeIntervalRef.current) {
+                clearInterval(fadeIntervalRef.current);
+              }
+            }
+          }, stepDuration);
+        })
+        .catch((error) => {
+          console.log('Audio play failed:', error);
+          // Still mark as "playing" so UI works, just muted
+          setIsPlaying(true);
+        });
+    }
   }, []);
 
   const fadeOut = useCallback((duration: number = 1500) => {
@@ -95,20 +101,27 @@ export const useWrappedAudio = () => {
 
   const toggleMute = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) return;
-
+    
     setIsMuted(prev => {
       const newMuted = !prev;
-      audio.volume = newMuted ? 0 : 0.3;
+      updateMutedRef(newMuted);
+      if (audio) {
+        audio.volume = newMuted ? 0 : 0.3;
+      }
       return newMuted;
     });
-  }, []);
+  }, [updateMutedRef]);
 
   const playSound = useCallback((url: string, volume: number = 0.15) => {
     if (isMutedRef.current) return;
-    const audio = new Audio(url);
-    audio.volume = volume;
-    audio.play().catch(() => {});
+    
+    try {
+      const audio = new Audio(url);
+      audio.volume = volume;
+      audio.play().catch(() => {});
+    } catch {
+      // Ignore errors
+    }
   }, []);
 
   const playTransitionSound = useCallback(() => {
