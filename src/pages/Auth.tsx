@@ -165,6 +165,13 @@ const Auth = () => {
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? "Loggar in..." : "Logga in"}
               </Button>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="w-full text-sm text-muted-foreground hover:underline"
+              >
+                Glömt lösenord?
+              </button>
             </form>
           </TabsContent>
 
@@ -206,6 +213,7 @@ const Auth = () => {
             </form>
           </TabsContent>
         </Tabs>
+        )}
       </Card>
     </div>
   );
