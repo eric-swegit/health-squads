@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,6 +22,27 @@ const Auth = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error("Ange din e-postadress");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin + '/reset-password',
+      });
+      if (error) throw error;
+      toast.success("En länk för att återställa lösenordet har skickats till din e-post!");
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast.error(error.message || "Kunde inte skicka återställningslänk");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -84,11 +107,38 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100 p-4">
       <Card className="w-full max-w-md p-6">
         <h1 className="text-2xl font-bold text-center mb-6">Health Squads</h1>
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Logga in</TabsTrigger>
-            <TabsTrigger value="register">Registrera</TabsTrigger>
-          </TabsList>
+        
+        {showForgotPassword ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.
+            </p>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <Input
+                type="email"
+                placeholder="E-post"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+              <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading ? "Skickar..." : "Skicka återställningslänk"}
+              </Button>
+            </form>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(false)}
+              className="w-full text-sm text-muted-foreground hover:underline"
+            >
+              Tillbaka till inloggning
+            </button>
+          </div>
+        ) : (
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Logga in</TabsTrigger>
+              <TabsTrigger value="register">Registrera</TabsTrigger>
+            </TabsList>
           
           <TabsContent value="login">
             <form onSubmit={handleLogin} className="space-y-4">
@@ -115,6 +165,13 @@ const Auth = () => {
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? "Loggar in..." : "Logga in"}
               </Button>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="w-full text-sm text-muted-foreground hover:underline"
+              >
+                Glömt lösenord?
+              </button>
             </form>
           </TabsContent>
 
@@ -156,6 +213,7 @@ const Auth = () => {
             </form>
           </TabsContent>
         </Tabs>
+        )}
       </Card>
     </div>
   );

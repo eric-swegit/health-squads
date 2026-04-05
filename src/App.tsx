@@ -13,6 +13,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import ActivityPage from "./pages/ActivityPage";
 import ProfilePage from "./pages/ProfilePage";
 import WrappedPage from "./pages/WrappedPage";
+import ResetPassword from "./pages/ResetPassword";
 import NavBar from "./components/NavBar";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => {
           <div className={showNavBar ? "pb-16" : ""}>
             <Routes>
               <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/"
                 element={
