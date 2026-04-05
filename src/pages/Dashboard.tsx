@@ -107,12 +107,12 @@ const Dashboard = () => {
           
           if (profileError) throw profileError;
           
-          // Calculate points from claimed activities after 2025-04-05
+          // Calculate points from claimed activities after 2026-04-05
           const { data: activitiesData, error: activitiesError } = await supabase
             .from('claimed_activities')
             .select('activities(points)')
             .eq('user_id', session.user.id)
-            .gte('created_at', '2025-04-05');
+            .gte('created_at', '2026-04-05');
           
           if (activitiesError) throw activitiesError;
           
