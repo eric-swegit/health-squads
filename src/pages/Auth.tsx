@@ -24,6 +24,27 @@ const Auth = () => {
     });
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error("Ange din e-postadress");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin + '/reset-password',
+      });
+      if (error) throw error;
+      toast.success("En länk för att återställa lösenordet har skickats till din e-post!");
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast.error(error.message || "Kunde inte skicka återställningslänk");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
