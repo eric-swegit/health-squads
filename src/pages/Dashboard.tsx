@@ -67,8 +67,8 @@ const Dashboard = () => {
   useEffect(() => {
     const calculateTimeLeft = () => {
       const timeZone = 'Europe/Stockholm';
-      // Challenge ends May 5, 2026 at 23:59:59 Swedish time (CET/CEST)
-      const challengeEndDate = toZonedTime(new Date('2026-05-05T23:59:59'), timeZone);
+      // Challenge ends May 8, 2026 at 23:59:59 Swedish time (CET/CEST)
+      const challengeEndDate = toZonedTime(new Date('2026-05-08T23:59:59'), timeZone);
       const now = toZonedTime(new Date(), timeZone);
       const diffTime = challengeEndDate.getTime() - now.getTime();
       
