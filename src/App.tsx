@@ -57,6 +57,7 @@ const App = () => {
           <div className={showNavBar ? "pb-16" : ""}>
             <Routes>
               <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/"
                 element={
