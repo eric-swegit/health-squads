@@ -13,6 +13,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import ActivityPage from "./pages/ActivityPage";
 import ProfilePage from "./pages/ProfilePage";
 import WrappedPage from "./pages/WrappedPage";
+import ResetPassword from "./pages/ResetPassword";
 import NavBar from "./components/NavBar";
 
 const queryClient = new QueryClient();
